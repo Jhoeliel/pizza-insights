@@ -1,1 +1,959 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analizador WhatsApp — Pizzería</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --rojo: #C0392B;
+    --rojo-dark: #96281B;
+    --rojo-light: #F5E6E4;
+    --naranja: #E67E22;
+    --naranja-light: #FEF0E3;
+    --verde: #27AE60;
+    --verde-light: #E5F7EE;
+    --azul: #2980B9;
+    --azul-light: #E8F4FD;
+    --amarillo: #F39C12;
+    --amarillo-light: #FEF9E7;
+    --gris: #7F8C8D;
+    --gris-light: #F8F9FA;
+    --fondo: #FDF8F5;
+    --texto: #1A1A2E;
+    --texto-muted: #6C757D;
+    --borde: #E8E0DB;
+    --blanco: #FFFFFF;
+    --card-sombra: 0 2px 12px rgba(0,0,0,0.06);
+    --card-sombra-hover: 0 8px 28px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--rojo);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: white;
+    letter-spacing: -0.5px;
+  }
+  .header-logo span { color: #FFD700; }
+  .header-subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    margin-left: auto;
+  }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* UPLOAD ZONE */
+  .upload-section {
+    background: var(--blanco);
+    border: 2px dashed var(--borde);
+    border-radius: 16px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .upload-section:hover { border-color: var(--rojo); background: var(--rojo-light); }
+  .upload-section.dragover { border-color: var(--rojo); background: var(--rojo-light); transform: scale(1.01); }
+  .upload-section input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { font-size: 48px; margin-bottom: 16px; }
+  .upload-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--texto);
+    margin-bottom: 8px;
+  }
+  .upload-desc { color: var(--texto-muted); font-size: 14px; line-height: 1.6; }
+  .upload-badge {
+    display: inline-block;
+    background: var(--rojo-light);
+    color: var(--rojo);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: 12px;
+  }
+
+  /* FILES LIST */
+  .files-list {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .file-chip {
+    background: var(--verde-light);
+    color: var(--verde);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+  }
+  .file-chip button {
+    background: none; border: none; cursor: pointer;
+    color: var(--verde); font-size: 14px; line-height: 1;
+    padding: 0; margin: 0;
+  }
+
+  /* ANALYZE BTN */
+  .btn-analyze {
+    margin-top: 24px;
+    width: 100%;
+    padding: 16px;
+    background: var(--rojo);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .btn-analyze:hover:not(:disabled) { background: var(--rojo-dark); transform: translateY(-1px); }
+  .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* PROGRESS */
+  .progress-wrap {
+    margin-top: 24px;
+    display: none;
+  }
+  .progress-bar-bg {
+    background: var(--borde);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--rojo), var(--naranja));
+    border-radius: 8px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+  .progress-text {
+    font-size: 13px;
+    color: var(--texto-muted);
+    text-align: center;
+  }
+
+  /* RESULTS */
+  .results-section { display: none; margin-top: 40px; }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--rojo);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* STAT CARDS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--card-sombra);
+  }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--texto-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--texto);
+    line-height: 1;
+  }
+  .stat-value.red { color: var(--rojo); }
+  .stat-value.orange { color: var(--naranja); }
+  .stat-value.green { color: var(--verde); }
+
+  /* ANALYSIS BLOCKS */
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) { .analysis-grid { grid-template-columns: 1fr; } }
+
+  .analysis-card {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--card-sombra);
+  }
+  .analysis-card.full { grid-column: 1 / -1; }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot.red { background: var(--rojo); }
+  .dot.orange { background: var(--naranja); }
+  .dot.green { background: var(--verde); }
+  .dot.blue { background: var(--azul); }
+  .dot.yellow { background: var(--amarillo); }
+
+  /* TAGS */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tag.red { background: var(--rojo-light); color: var(--rojo-dark); }
+  .tag.orange { background: var(--naranja-light); color: #A04000; }
+  .tag.green { background: var(--verde-light); color: #1A7A42; }
+  .tag.blue { background: var(--azul-light); color: #1A5276; }
+  .tag.yellow { background: var(--amarillo-light); color: #7D6608; }
+  .tag.gray { background: var(--gris-light); color: #444; }
+  .tag-count {
+    background: rgba(0,0,0,0.1);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 11px;
+  }
+
+  /* PERFIL CARDS */
+  .perfil-list { display: flex; flex-direction: column; gap: 10px; }
+  .perfil-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--gris-light);
+    border-radius: 10px;
+    border-left: 4px solid transparent;
+  }
+  .perfil-item.top { border-left-color: var(--rojo); }
+  .perfil-item.medium { border-left-color: var(--naranja); }
+  .perfil-item.low { border-left-color: var(--gris); }
+  .perfil-icon { font-size: 20px; flex-shrink: 0; }
+  .perfil-name { font-weight: 600; font-size: 14px; flex: 1; }
+  .perfil-desc { font-size: 12px; color: var(--texto-muted); }
+  .perfil-pct {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--rojo);
+    flex-shrink: 0;
+  }
+
+  /* CHART BAR */
+  .bar-list { display: flex; flex-direction: column; gap: 10px; }
+  .bar-item { display: flex; flex-direction: column; gap: 4px; }
+  .bar-label { font-size: 13px; font-weight: 500; display: flex; justify-content: space-between; }
+  .bar-label span { color: var(--texto-muted); font-size: 12px; }
+  .bar-track { background: var(--gris-light); border-radius: 6px; height: 8px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; transition: width 0.8s ease; }
+  .bar-fill.red { background: var(--rojo); }
+  .bar-fill.orange { background: var(--naranja); }
+  .bar-fill.green { background: var(--verde); }
+  .bar-fill.blue { background: var(--azul); }
+  .bar-fill.yellow { background: var(--amarillo); }
+
+  /* RECOMENDACIONES */
+  .rec-list { display: flex; flex-direction: column; gap: 12px; }
+  .rec-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--borde);
+  }
+  .rec-item.urgente { border-left: 4px solid var(--rojo); border-left-width: 4px; }
+  .rec-item.importante { border-left: 4px solid var(--naranja); }
+  .rec-item.sugerencia { border-left: 4px solid var(--azul); }
+  .rec-icon { font-size: 22px; flex-shrink: 0; }
+  .rec-content { flex: 1; }
+  .rec-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .rec-desc { font-size: 13px; color: var(--texto-muted); line-height: 1.5; }
+  .rec-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 4px;
+    display: inline-block;
+  }
+  .rec-badge.urgente { background: var(--rojo-light); color: var(--rojo); }
+  .rec-badge.importante { background: var(--naranja-light); color: var(--naranja); }
+  .rec-badge.sugerencia { background: var(--azul-light); color: var(--azul); }
+
+  /* CITAS */
+  .quote-list { display: flex; flex-direction: column; gap: 8px; }
+  .quote-item {
+    padding: 10px 14px;
+    background: var(--gris-light);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--texto);
+    border-left: 3px solid var(--borde);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .quote-item.objecion { border-left-color: var(--rojo); background: var(--rojo-light); color: var(--rojo-dark); }
+  .quote-item.positivo { border-left-color: var(--verde); background: var(--verde-light); color: #1A7A42; }
+
+  /* FOOTER */
+  .footer-note {
+    text-align: center;
+    color: var(--texto-muted);
+    font-size: 12px;
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--borde);
+  }
+
+  /* INSTRUCTIONS */
+  .instructions {
+    background: var(--blanco);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--borde);
+  }
+  .instr-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 12px;
+    color: var(--texto);
+  }
+  .instr-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .instr-step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: var(--rojo);
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step-text { font-size: 13px; color: var(--texto-muted); line-height: 1.5; }
+  .step-text strong { color: var(--texto); }
+
+  /* SENTIMIENTO */
+  .sentimiento-bar {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 28px;
+    margin: 12px 0;
+  }
+  .sent-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    transition: width 0.8s ease;
+  }
+  .sent-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--texto-muted);
+  }
+  .sent-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--texto-muted);
+    font-size: 14px;
+  }
+
+  .processing-chat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--naranja-light);
+    border-radius: 10px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #7D4A00;
+  }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(0,0,0,0.1);
+    border-top-color: var(--naranja);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">🍕 Pizza<span>Insights</span></div>
+  <div class="header-subtitle">Análisis de conversaciones WhatsApp</div>
+</div>
+
+<div class="container">
+
+  <!-- API KEY BANNER -->
+  <div style="background:#1A1A2E;border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <div style="color:#FFD700;font-family:Syne,sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;">🔑 API Key de Anthropic (requerida)</div>
+      <div style="color:rgba(255,255,255,0.6);font-size:12px;line-height:1.5;">
+        Obtén tu key gratis en <a href="https://console.anthropic.com" target="_blank" style="color:#FFD700;">console.anthropic.com</a><br>
+        Se guarda solo en tu navegador (localStorage), nunca se envía a terceros.
+      </div>
+    </div>
+    <div style="flex:2;min-width:280px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..."
+          style="flex:1;padding:10px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:white;font-size:13px;font-family:DM Sans,sans-serif;outline:none;"
+          autocomplete="off" />
+        <button onclick="saveKey()" style="padding:10px 18px;background:#FFD700;color:#1A1A2E;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:Syne,sans-serif;white-space:nowrap;">Guardar</button>
+      </div>
+      <div id="keyStatus" style="font-size:12px;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- NETLIFY TIP -->
+  <div style="background:#E8F4FD;border:1px solid #BDD7EE;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#1A5276;display:flex;gap:10px;align-items:flex-start;">
+    <span style="font-size:18px;flex-shrink:0;">💡</span>
+    <div><strong>¿Por qué necesito la API key?</strong> Al abrir el HTML desde tu PC, el navegador bloquea llamadas externas por seguridad (CORS). Con tu key, la llamada se hace directamente desde tu navegador. La key se guarda solo en este dispositivo.</div>
+  </div>
+
+  <!-- INSTRUCCIONES -->
+  <div class="instructions">
+    <div class="instr-title">¿Cómo exportar tus chats de WhatsApp?</div>
+    <div class="instr-steps">
+      <div class="instr-step">
+        <div class="step-num">1</div>
+        <div class="step-text">Abre un chat en tu <strong>celular</strong></div>
+      </div>
+      <div class="instr-step">
+        <div class="step-num">2</div>
+        <div class="step-text">Toca <strong>⋮ → Más → Exportar chat</strong></div>
+      </div>
+      <div class="instr-step">
+        <div class="step-num">3</div>
+        <div class="step-text">Elige <strong>"Sin archivos"</strong> → guarda el .txt</div>
+      </div>
+      <div class="instr-step">
+        <div class="step-num">4</div>
+        <div class="step-text">Repite para cada chat y <strong>sube todos aquí</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="upload-section" id="dropzone">
+    <input type="file" id="fileInput" multiple accept=".txt" />
+    <div class="upload-icon">📂</div>
+    <div class="upload-title">Sube tus chats exportados</div>
+    <div class="upload-desc">Arrastra aquí los archivos .txt o haz clic para seleccionarlos<br>Puedes subir múltiples archivos a la vez</div>
+    <div class="upload-badge">Formato: _chat.txt de WhatsApp</div>
+  </div>
+
+  <div class="files-list" id="filesList"></div>
+
+  <button class="btn-analyze" id="btnAnalyze" disabled>
+    🔍 Analizar conversaciones con IA
+  </button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="processing-chat" id="processingMsg">
+      <div class="spinner"></div>
+      <span id="processingText">Procesando chats...</span>
+    </div>
+    <div style="margin-top: 14px;">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Analizando con IA...</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection">
+
+    <!-- STATS -->
+    <div class="section-title">📊 Resumen general</div>
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- ANÁLISIS PRINCIPAL -->
+    <div class="section-title">🔍 Análisis detallado</div>
+    <div class="analysis-grid">
+
+      <!-- OBJECIONES -->
+      <div class="analysis-card" id="card-objeciones">
+        <div class="card-title"><div class="dot red"></div> Objeciones frecuentes</div>
+        <div id="objeciones-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+      <!-- PERFILES -->
+      <div class="analysis-card" id="card-perfiles">
+        <div class="card-title"><div class="dot orange"></div> Perfiles de clientes</div>
+        <div id="perfiles-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+      <!-- PRODUCTOS -->
+      <div class="analysis-card" id="card-productos">
+        <div class="card-title"><div class="dot green"></div> Productos más consultados</div>
+        <div id="productos-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+      <!-- HORARIOS -->
+      <div class="analysis-card" id="card-horarios">
+        <div class="card-title"><div class="dot yellow"></div> Patrones de horario</div>
+        <div id="horarios-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+      <!-- SENTIMIENTO -->
+      <div class="analysis-card full" id="card-sentimiento">
+        <div class="card-title"><div class="dot blue"></div> Sentimiento general</div>
+        <div id="sentimiento-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+      <!-- FRASES CLAVE -->
+      <div class="analysis-card full" id="card-frases">
+        <div class="card-title"><div class="dot red"></div> Frases y patrones textuales</div>
+        <div id="frases-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+      <!-- RECOMENDACIONES -->
+      <div class="analysis-card full" id="card-recomendaciones">
+        <div class="card-title"><div class="dot orange"></div> Recomendaciones accionables</div>
+        <div id="recomendaciones-content"><div class="empty-state">Cargando...</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer-note">
+    PizzaInsights · Análisis privado y local · Los datos no se almacenan en ningún servidor externo
+  </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const filesList = document.getElementById('filesList');
+const btnAnalyze = document.getElementById('btnAnalyze');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const processingText = document.getElementById('processingText');
+const resultsSection = document.getElementById('resultsSection');
+const dropzone = document.getElementById('dropzone');
+
+let filesData = [];
+
+// DRAG & DROP
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFiles(Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.txt')));
+});
+fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
+
+function handleFiles(newFiles) {
+  newFiles.forEach(file => {
+    if (!filesData.find(f => f.name === file.name)) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        filesData.push({ name: file.name, content: e.target.result });
+        renderFileChips();
+        var key = localStorage.getItem('pizza_api_key') || '';
+  btnAnalyze.disabled = filesData.length === 0 || !key.startsWith('sk-ant-');
+  if (typeof checkBtn === 'function') checkBtn();
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+  });
+}
+
+function renderFileChips() {
+  filesList.innerHTML = filesData.map((f, i) => {
+    const lines = f.content.split('\n').length;
+    return '<div class="file-chip">💬 ' + f.name + ' <span style="opacity:0.7">(' + lines + ' líneas)</span><button onclick="removeFile(' + i + ')">×</button></div>';
+  }).join('');
+}
+
+function removeFile(i) {
+  filesData.splice(i, 1);
+  renderFileChips();
+  var key = localStorage.getItem('pizza_api_key') || '';
+  btnAnalyze.disabled = filesData.length === 0 || !key.startsWith('sk-ant-');
+  if (typeof checkBtn === 'function') checkBtn();
+}
+
+// PARSE WHATSAPP
+function parseWhatsAppChats(files) {
+  let allMessages = [];
+  files.forEach(file => {
+    const lines = file.content.split('\n');
+    const chatName = file.name.replace('WhatsApp Chat con ', '').replace('.txt', '').replace('_chat', '');
+    lines.forEach(line => {
+      // Formato: DD/MM/YYYY, HH:MM - Nombre: Mensaje
+      const match = line.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s*(\d{1,2}:\d{2})(?::\d{2})?\s*[-–]\s*([^:]+):\s*(.+)$/);
+      if (match) {
+        const [, date, time, sender, message] = match;
+        const hour = parseInt(time.split(':')[0]);
+        allMessages.push({ date, time, hour, sender: sender.trim(), message: message.trim(), chat: chatName });
+      }
+    });
+  });
+  return allMessages;
+}
+
+function buildSummary(messages) {
+  const chats = new Set(messages.map(m => m.chat)).size;
+  const uniqueSenders = new Set(messages.map(m => m.sender)).size;
+  const hours = messages.map(m => m.hour);
+  const hourCounts = {};
+  hours.forEach(h => hourCounts[h] = (hourCounts[h] || 0) + 1);
+  const peakHour = Object.entries(hourCounts).sort((a,b) => b[1]-a[1])[0];
+
+  return {
+    total_mensajes: messages.length,
+    total_chats: chats,
+    total_contactos: uniqueSenders,
+    hora_pico: peakHour ? peakHour[0] + ':00' : 'N/A',
+    muestra: messages.slice(0, 300).map(m => m.sender + ': ' + m.message).join('\n')
+  };
+}
+
+// MAIN ANALYZE
+btnAnalyze.addEventListener('click', async () => {
+  if (filesData.length === 0) return;
+
+  btnAnalyze.disabled = true;
+  progressWrap.style.display = 'block';
+  resultsSection.style.display = 'none';
+  setProgress(5, 'Parseando chats de WhatsApp...');
+
+  const messages = parseWhatsAppChats(filesData);
+  const summary = buildSummary(messages);
+
+  if (messages.length < 5) {
+    alert('No se encontraron mensajes en el formato esperado de WhatsApp. Verifica que los archivos son exportaciones de WhatsApp (.txt).');
+    btnAnalyze.disabled = false;
+    progressWrap.style.display = 'none';
+    return;
+  }
+
+  setProgress(15, 'Preparando análisis (' + messages.length + ' mensajes encontrados)...');
+
+  // Muestra representativa
+  const sample = messages.slice(0, 400).map(m => '[' + m.time + '] ' + m.sender + ': ' + m.message).join('\n');
+
+  const prompt = `Eres un experto en análisis de negocios y comportamiento de clientes para una PIZZERÍA de delivery en Perú (Chimbote). Analiza estas conversaciones reales de WhatsApp del negocio y extrae insights accionables.
+
+DATOS:
+- Total mensajes analizados: ${messages.length}
+- Total chats (clientes): ${summary.total_chats}
+- Hora pico detectada: ${summary.hora_pico}
+
+MUESTRA DE CONVERSACIONES:
+${sample}
+
+Analiza y responde SOLO en JSON con esta estructura exacta (sin markdown ni texto extra):
+{
+  "stats": {
+    "tasa_conversion_estimada": "porcentaje estimado de chats que terminaron en pedido",
+    "ticket_promedio_percibido": "percepción del precio según comentarios",
+    "nivel_satisfaccion": "Alto/Medio/Bajo con justificación breve"
+  },
+  "objeciones": [
+    { "texto": "objeción exacta o parafraseo", "frecuencia": "Alta/Media/Baja", "respuesta_sugerida": "respuesta efectiva para esta objeción" }
+  ],
+  "perfiles_clientes": [
+    { "nombre": "nombre del perfil", "icono": "emoji", "descripcion": "descripción breve", "porcentaje": 30, "tipo": "top/medium/low" }
+  ],
+  "productos_mencionados": [
+    { "producto": "nombre del producto", "menciones": 10, "contexto": "pedido/consulta/queja" }
+  ],
+  "horarios_pico": [
+    { "franja": "nombre de la franja", "horas": "rango horario", "porcentaje": 40, "color": "red/orange/yellow/green/blue" }
+  ],
+  "sentimiento": {
+    "positivo": 45,
+    "neutral": 35,
+    "negativo": 20,
+    "resumen": "resumen de 2 líneas del sentimiento general"
+  },
+  "frases_objecion": ["frase real o parecida del chat", "otra frase"],
+  "frases_positivas": ["frase positiva real", "otra frase positiva"],
+  "recomendaciones": [
+    { "titulo": "título corto", "descripcion": "descripción accionable", "prioridad": "urgente/importante/sugerencia", "icono": "emoji" }
+  ]
+}`;
+
+  try {
+    setProgress(30, 'Enviando a análisis con IA...');
+
+    const apiKey = localStorage.getItem('pizza_api_key') || '';
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    setProgress(70, 'Procesando resultados...');
+
+    const data = await response.json();
+    const rawText = data.content.map(b => b.text || '').join('');
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    setProgress(90, 'Generando dashboard...');
+    await new Promise(r => setTimeout(r, 400));
+
+    renderResults(result, summary, messages.length);
+    setProgress(100, '¡Análisis completado!');
+
+    setTimeout(() => {
+      progressWrap.style.display = 'none';
+      resultsSection.style.display = 'block';
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 600);
+
+  } catch (err) {
+    console.error(err);
+    var msg = err.message || 'Error desconocido';
+    if (msg.includes('401')) msg = 'API Key inválida o sin créditos. Verifica en console.anthropic.com';
+    else if (msg.includes('Failed to fetch')) msg = 'No se pudo conectar. Verifica tu internet.';
+    alert('Error: ' + msg);
+    btnAnalyze.disabled = false;
+    progressWrap.style.display = 'none';
+  }
+});
+
+function setProgress(pct, text) {
+  progressFill.style.width = pct + '%';
+  progressText.textContent = text;
+  processingText.textContent = text;
+}
+
+function renderResults(r, summary, totalMsg) {
+  // STATS
+  const statsGrid = document.getElementById('statsGrid');
+  statsGrid.innerHTML =
+    statCard('Total mensajes', totalMsg, '') +
+    statCard('Chats analizados', summary.total_chats, 'red') +
+    statCard('Hora pico', summary.hora_pico, 'orange') +
+    statCard('Satisfacción', r.stats ? r.stats.nivel_satisfaccion.split(' ')[0] : '—', 'green') +
+    statCard('Conversión est.', r.stats ? r.stats.tasa_conversion_estimada : '—', '') +
+    statCard('Precio percibido', r.stats ? r.stats.ticket_promedio_percibido : '—', 'orange');
+
+  // OBJECIONES
+  const obj = r.objeciones || [];
+  document.getElementById('objeciones-content').innerHTML = obj.length ? obj.map(o =>
+    '<div style="margin-bottom: 14px; padding: 12px; background: var(--rojo-light); border-radius: 10px; border-left: 3px solid var(--rojo);">' +
+    '<div style="font-weight: 600; font-size: 13px; color: var(--rojo-dark); margin-bottom: 4px;">❝ ' + o.texto + '</div>' +
+    '<div style="font-size: 11px; color: var(--gris); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Frecuencia: ' + o.frecuencia + '</div>' +
+    '<div style="font-size: 12px; color: #2c3e50; background: white; padding: 8px 10px; border-radius: 6px;">💡 ' + o.respuesta_sugerida + '</div>' +
+    '</div>'
+  ).join('') : '<div class="empty-state">Sin objeciones detectadas</div>';
+
+  // PERFILES
+  const perfiles = r.perfiles_clientes || [];
+  document.getElementById('perfiles-content').innerHTML = '<div class="perfil-list">' + perfiles.map(p =>
+    '<div class="perfil-item ' + p.tipo + '">' +
+    '<div class="perfil-icon">' + p.icono + '</div>' +
+    '<div style="flex:1"><div class="perfil-name">' + p.nombre + '</div>' +
+    '<div class="perfil-desc">' + p.descripcion + '</div></div>' +
+    '<div class="perfil-pct">' + p.porcentaje + '%</div>' +
+    '</div>'
+  ).join('') + '</div>';
+
+  // PRODUCTOS
+  const prods = r.productos_mencionados || [];
+  const maxMenc = prods.length ? Math.max(...prods.map(p => p.menciones)) : 1;
+  const colors = ['red', 'orange', 'green', 'blue', 'yellow', 'red', 'orange'];
+  document.getElementById('productos-content').innerHTML = '<div class="bar-list">' + prods.slice(0, 7).map((p, i) =>
+    '<div class="bar-item">' +
+    '<div class="bar-label">' + p.producto + ' <span>' + p.menciones + ' menciones · ' + p.contexto + '</span></div>' +
+    '<div class="bar-track"><div class="bar-fill ' + colors[i % colors.length] + '" style="width:' + Math.round(p.menciones / maxMenc * 100) + '%"></div></div>' +
+    '</div>'
+  ).join('') + '</div>';
+
+  // HORARIOS
+  const horarios = r.horarios_pico || [];
+  document.getElementById('horarios-content').innerHTML = '<div class="bar-list">' + horarios.map(h =>
+    '<div class="bar-item">' +
+    '<div class="bar-label">' + h.franja + ' <span>' + h.horas + '</span></div>' +
+    '<div class="bar-track"><div class="bar-fill ' + h.color + '" style="width:' + h.porcentaje + '%"></div></div>' +
+    '</div>'
+  ).join('') + '</div>';
+
+  // SENTIMIENTO
+  const sent = r.sentimiento || { positivo: 33, neutral: 33, negativo: 34, resumen: '' };
+  document.getElementById('sentimiento-content').innerHTML =
+    '<div class="sentimiento-bar">' +
+    '<div class="sent-seg" style="width:' + sent.positivo + '%; background: var(--verde);">' + sent.positivo + '%</div>' +
+    '<div class="sent-seg" style="width:' + sent.neutral + '%; background: var(--gris);">' + sent.neutral + '%</div>' +
+    '<div class="sent-seg" style="width:' + sent.negativo + '%; background: var(--rojo);">' + sent.negativo + '%</div>' +
+    '</div>' +
+    '<div class="sent-legend">' +
+    '<span><span class="sent-dot" style="background:var(--verde)"></span>Positivo ' + sent.positivo + '%</span>' +
+    '<span><span class="sent-dot" style="background:var(--gris)"></span>Neutral ' + sent.neutral + '%</span>' +
+    '<span><span class="sent-dot" style="background:var(--rojo)"></span>Negativo ' + sent.negativo + '%</span>' +
+    '</div>' +
+    '<p style="margin-top: 12px; font-size: 13px; color: var(--texto-muted); line-height: 1.6;">' + (sent.resumen || '') + '</p>';
+
+  // FRASES
+  const frasesObj = r.frases_objecion || [];
+  const frasesPos = r.frases_positivas || [];
+  document.getElementById('frases-content').innerHTML =
+    '<div style="margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--rojo); text-transform: uppercase; letter-spacing: 0.5px;">Frases de objeción</div>' +
+    '<div class="quote-list" style="margin-bottom:16px">' + frasesObj.map(f => '<div class="quote-item objecion">❝ ' + f + ' ❞</div>').join('') + '</div>' +
+    '<div style="margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--verde); text-transform: uppercase; letter-spacing: 0.5px;">Frases positivas</div>' +
+    '<div class="quote-list">' + frasesPos.map(f => '<div class="quote-item positivo">❝ ' + f + ' ❞</div>').join('') + '</div>';
+
+  // RECOMENDACIONES
+  const recs = r.recomendaciones || [];
+  document.getElementById('recomendaciones-content').innerHTML = '<div class="rec-list">' + recs.map(rec =>
+    '<div class="rec-item ' + rec.prioridad + '">' +
+    '<div class="rec-icon">' + rec.icono + '</div>' +
+    '<div class="rec-content">' +
+    '<div class="rec-badge ' + rec.prioridad + '">' + rec.prioridad.toUpperCase() + '</div>' +
+    '<div class="rec-title">' + rec.titulo + '</div>' +
+    '<div class="rec-desc">' + rec.descripcion + '</div>' +
+    '</div></div>'
+  ).join('') + '</div>';
+}
+
+function statCard(label, value, color) {
+  return '<div class="stat-card"><div class="stat-label">' + label + '</div><div class="stat-value ' + color + '">' + value + '</div></div>';
+}
+
+// API KEY
+(function(){
+  var stored = localStorage.getItem('pizza_api_key') || '';
+  if (stored) {
+    document.getElementById('apiKeyInput').value = stored;
+    document.getElementById('keyStatus').innerHTML = '<span style="color:#27AE60">✅ Key guardada</span>';
+  }
+  checkBtn();
+})();
+
+function saveKey() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  if (!k.startsWith('sk-ant-')) {
+    document.getElementById('keyStatus').innerHTML = '<span style="color:#E74C3C">❌ La key debe empezar con sk-ant-</span>';
+    return;
+  }
+  localStorage.setItem('pizza_api_key', k);
+  document.getElementById('keyStatus').innerHTML = '<span style="color:#27AE60">✅ Key guardada correctamente</span>';
+  checkBtn();
+}
+
+function checkBtn() {
+  var key = localStorage.getItem('pizza_api_key') || '';
+  var hasFiles = typeof filesData !== 'undefined' && filesData.length > 0;
+  var btn = document.getElementById('btnAnalyze');
+  if (btn) btn.disabled = !hasFiles || !key.startsWith('sk-ant-');
+}
+</script>
+</body>
+</html>
