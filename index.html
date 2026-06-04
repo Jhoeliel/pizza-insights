@@ -3,348 +3,328 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analizador WhatsApp — Pizzería (Gemini)</title>
+<title>PizzaInsights — Gemini</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-  :root {
-    --rojo:#C0392B; --rojo-dark:#96281B; --rojo-light:#F5E6E4;
-    --naranja:#E67E22; --naranja-light:#FEF0E3;
-    --verde:#27AE60; --verde-light:#E5F7EE;
-    --azul:#2980B9; --azul-light:#E8F4FD;
-    --amarillo:#F39C12; --amarillo-light:#FEF9E7;
-    --gris:#7F8C8D; --gris-light:#F8F9FA;
-    --fondo:#FDF8F5; --texto:#1A1A2E; --texto-muted:#6C757D;
-    --borde:#E8E0DB; --blanco:#FFFFFF;
-    --gemini1:#4285F4; --gemini2:#34A853;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'DM Sans',sans-serif;background:var(--fondo);color:var(--texto);min-height:100vh;}
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap');
+:root {
+  --rojo:#C0392B; --rojo-dark:#96281B; --rojo-light:#F5E6E4;
+  --naranja:#E67E22; --naranja-light:#FEF0E3;
+  --verde:#27AE60; --verde-light:#E5F7EE;
+  --azul:#2980B9; --azul-light:#E8F4FD;
+  --amarillo:#F39C12;
+  --gris:#7F8C8D; --gris-light:#F8F9FA;
+  --fondo:#FDF8F5; --texto:#1A1A2E; --muted:#6C757D;
+  --borde:#E8E0DB; --blanco:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--fondo);color:var(--texto);}
+.header{background:var(--rojo);padding:16px 28px;display:flex;align-items:center;gap:12px;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:white;}
+.logo span{color:#FFD700;}
+.badge{background:rgba(255,255,255,0.2);color:white;font-size:11px;padding:2px 9px;border-radius:20px;}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 20px;}
 
-  .header{background:var(--rojo);padding:18px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;}
-  .header-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:white;}
-  .header-logo span{color:#FFD700;}
-  .header-badge{background:rgba(255,255,255,0.2);color:white;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;}
-  .header-sub{font-size:13px;color:rgba(255,255,255,0.7);margin-left:auto;}
+/* KEY */
+.key-box{background:#0F172A;border-radius:12px;padding:18px 22px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+.key-left{flex:1;min-width:180px;}
+.key-title{color:#4285F4;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px;}
+.key-desc{color:rgba(255,255,255,0.5);font-size:12px;line-height:1.5;}
+.key-desc a{color:#4285F4;}
+.key-right{flex:2;min-width:260px;}
+.key-row{display:flex;gap:8px;}
+.key-input{flex:1;padding:9px 13px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.07);color:white;font-size:13px;outline:none;}
+.key-input:focus{border-color:#4285F4;}
+.key-input::placeholder{color:rgba(255,255,255,0.25);}
+.key-btn{padding:9px 16px;background:#4285F4;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;}
+.key-status{font-size:12px;margin-top:5px;}
 
-  .container{max-width:1100px;margin:0 auto;padding:28px 24px;}
+/* INSTRUCCIONES */
+.instr{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;padding:14px 18px;margin-bottom:16px;}
+.instr-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:10px;}
+.instr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;}
+.instr-step{display:flex;gap:8px;align-items:flex-start;}
+.sn{background:var(--rojo);color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.st{font-size:12px;color:var(--muted);line-height:1.5;}
+.st strong{color:var(--texto);}
 
-  /* API KEY BANNER */
-  .api-banner{background:#0F172A;border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
-  .api-banner-title{color:#4285F4;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
-  .api-banner-desc{color:rgba(255,255,255,0.55);font-size:12px;line-height:1.6;}
-  .api-banner-desc a{color:#4285F4;text-decoration:none;}
-  .api-banner-desc a:hover{text-decoration:underline;}
-  .api-input-wrap{display:flex;gap:8px;align-items:center;flex:2;min-width:280px;}
-  .api-input{flex:1;padding:10px 14px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.07);color:white;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
-  .api-input:focus{border-color:#4285F4;}
-  .api-input::placeholder{color:rgba(255,255,255,0.25);}
-  .btn-save{padding:10px 18px;background:#4285F4;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;font-family:'Syne',sans-serif;white-space:nowrap;transition:opacity .2s;}
-  .btn-save:hover{opacity:.85;}
-  .key-status{font-size:12px;margin-top:6px;}
-  .key-ok{color:#34A853;} .key-err{color:#EA4335;}
+/* UPLOAD */
+.upload-area{background:var(--blanco);border:2px dashed var(--borde);border-radius:14px;padding:36px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.upload-area:hover{border-color:var(--rojo);background:var(--rojo-light);}
+.upload-area.over{border-color:var(--rojo);background:var(--rojo-light);}
+.u-icon{font-size:38px;margin-bottom:10px;}
+.u-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px;}
+.u-desc{color:var(--muted);font-size:13px;line-height:1.5;}
+.u-badge{display:inline-block;background:var(--rojo-light);color:var(--rojo);font-size:11px;padding:3px 11px;border-radius:20px;margin-top:8px;}
 
-  /* STEPS TIP */
-  .tip-box{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;padding:16px 20px;margin-bottom:20px;}
-  .tip-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:10px;color:var(--texto);}
-  .tip-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;}
-  .tip-step{display:flex;gap:8px;align-items:flex-start;}
-  .step-n{background:var(--rojo);color:white;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px;}
-  .step-t{font-size:12px;color:var(--texto-muted);line-height:1.5;}
-  .step-t strong{color:var(--texto);}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+.chip{background:var(--verde-light);color:#1A7A42;font-size:12px;padding:5px 11px;border-radius:20px;display:flex;align-items:center;gap:5px;font-weight:500;}
+.chip button{background:none;border:none;cursor:pointer;color:#1A7A42;font-size:13px;line-height:1;padding:0;}
 
-  /* GEMINI NOTE */
-  .gemini-note{background:linear-gradient(135deg,#E8F0FE,#E6F4EA);border:1px solid #BDD4F7;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#174EA6;display:flex;gap:10px;align-items:flex-start;}
-  .gemini-note strong{display:block;margin-bottom:2px;color:#1A73E8;}
+.btn-main{width:100%;padding:14px;background:var(--rojo);color:white;border:none;border-radius:11px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:16px;}
+.btn-main:hover:not(:disabled){background:var(--rojo-dark);}
+.btn-main:disabled{opacity:.4;cursor:not-allowed;}
 
-  /* UPLOAD */
-  .upload-zone{background:var(--blanco);border:2px dashed var(--borde);border-radius:16px;padding:40px 32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
-  .upload-zone:hover,.upload-zone.drag{border-color:var(--rojo);background:var(--rojo-light);}
-  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-  .upload-icon{font-size:42px;margin-bottom:12px;}
-  .upload-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;}
-  .upload-desc{color:var(--texto-muted);font-size:13px;line-height:1.6;}
-  .upload-badge{display:inline-block;background:var(--rojo-light);color:var(--rojo);font-size:11px;font-weight:500;padding:3px 12px;border-radius:20px;margin-top:10px;}
+/* PROGRESS */
+.prog-wrap{display:none;margin-bottom:16px;}
+.prog-msg{display:flex;align-items:center;gap:10px;padding:12px 15px;background:var(--naranja-light);border-radius:9px;margin-bottom:9px;font-size:13px;color:#7D4A00;}
+.spin{width:17px;height:17px;border:2px solid rgba(0,0,0,0.08);border-top-color:var(--naranja);border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.prog-bg{background:var(--borde);border-radius:6px;height:6px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--rojo),var(--naranja));border-radius:6px;width:0%;transition:width .4s;}
+.prog-text{font-size:12px;color:var(--muted);text-align:center;margin-top:6px;}
 
-  .files-list{margin-top:14px;display:flex;flex-wrap:wrap;gap:7px;}
-  .file-chip{background:var(--verde-light);color:#1A7A42;font-size:12px;padding:5px 12px;border-radius:20px;display:flex;align-items:center;gap:6px;font-weight:500;}
-  .file-chip button{background:none;border:none;cursor:pointer;color:#1A7A42;font-size:14px;line-height:1;padding:0;}
+/* RESULTS */
+.results{display:none;}
+.sec{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--rojo);text-transform:uppercase;letter-spacing:1.4px;margin:20px 0 10px;}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:22px;}
+.sc{background:var(--blanco);border:1px solid var(--borde);border-radius:11px;padding:13px 15px;}
+.sl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:5px;font-weight:500;}
+.sv{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;line-height:1;}
+.sv.r{color:var(--rojo);} .sv.o{color:var(--naranja);} .sv.g{color:var(--verde);}
 
-  .btn-analyze{margin-top:18px;width:100%;padding:15px;background:var(--rojo);color:white;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;}
-  .btn-analyze:hover:not(:disabled){background:var(--rojo-dark);transform:translateY(-1px);}
-  .btn-analyze:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:640px){.agrid{grid-template-columns:1fr;}}
+.ac{background:var(--blanco);border:1px solid var(--borde);border-radius:13px;padding:16px 18px;}
+.ac.full{grid-column:1/-1;}
+.ct{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.dot{width:8px;height:8px;border-radius:50%;}
+.dr{background:var(--rojo);} .do{background:var(--naranja);} .dg{background:var(--verde);} .db{background:var(--azul);} .dy{background:var(--amarillo);}
 
-  /* PROGRESS */
-  .progress-wrap{margin-top:18px;display:none;}
-  .proc-msg{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--naranja-light);border-radius:10px;margin-bottom:10px;font-size:13px;color:#7D4A00;}
-  .spinner{width:18px;height:18px;border:2.5px solid rgba(0,0,0,0.08);border-top-color:var(--naranja);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .prog-bg{background:var(--borde);border-radius:8px;height:7px;overflow:hidden;}
-  .prog-fill{height:100%;background:linear-gradient(90deg,var(--rojo),var(--naranja));border-radius:8px;width:0%;transition:width .4s ease;}
-  .prog-text{font-size:12px;color:var(--texto-muted);text-align:center;margin-top:7px;}
+.bars{display:flex;flex-direction:column;gap:8px;}
+.bar-i{display:flex;flex-direction:column;gap:3px;}
+.bl{font-size:12px;font-weight:500;display:flex;justify-content:space-between;}
+.bl span{color:var(--muted);font-size:11px;}
+.bt{background:var(--gris-light);border-radius:5px;height:6px;overflow:hidden;}
+.bf{height:100%;border-radius:5px;transition:width .8s;}
+.bfr{background:var(--rojo);} .bfo{background:var(--naranja);} .bfg{background:var(--verde);} .bfb{background:var(--azul);} .bfy{background:var(--amarillo);}
 
-  /* RESULTS */
-  .results-section{display:none;margin-top:34px;}
-  .sec-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--rojo);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;}
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:26px;}
-  .stat-card{background:var(--blanco);border:1px solid var(--borde);border-radius:12px;padding:14px 16px;}
-  .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--texto-muted);margin-bottom:6px;font-weight:500;}
-  .stat-value{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--texto);line-height:1;}
-  .stat-value.red{color:var(--rojo);} .stat-value.orange{color:var(--naranja);} .stat-value.green{color:var(--verde);}
+.perfs{display:flex;flex-direction:column;gap:7px;}
+.perf{display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--gris-light);border-radius:9px;border-left:4px solid var(--gris);}
+.perf.top{border-left-color:var(--rojo);} .perf.medium{border-left-color:var(--naranja);}
+.pi{font-size:16px;flex-shrink:0;}
+.pn{font-weight:600;font-size:12px;flex:1;}
+.pd{font-size:11px;color:var(--muted);}
+.pp{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--rojo);}
 
-  .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
-  @media(max-width:680px){.analysis-grid{grid-template-columns:1fr;}}
-  .a-card{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:18px 20px;}
-  .a-card.full{grid-column:1/-1;}
-  .card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px;display:flex;align-items:center;gap:8px;}
-  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-  .dot.red{background:var(--rojo);} .dot.ora{background:var(--naranja);} .dot.grn{background:var(--verde);} .dot.blu{background:var(--azul);} .dot.yel{background:var(--amarillo);}
+.recs{display:flex;flex-direction:column;gap:9px;}
+.rec{display:flex;gap:10px;padding:11px 13px;border-radius:9px;border:1px solid var(--borde);border-left-width:4px;}
+.rec.urgente{border-left-color:var(--rojo);} .rec.importante{border-left-color:var(--naranja);} .rec.sugerencia{border-left-color:var(--azul);}
+.ri{font-size:18px;flex-shrink:0;}
+.rb{font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 7px;border-radius:20px;display:inline-block;margin-bottom:3px;}
+.rb.urgente{background:var(--rojo-light);color:var(--rojo);}
+.rb.importante{background:var(--naranja-light);color:var(--naranja);}
+.rb.sugerencia{background:var(--azul-light);color:var(--azul);}
+.rt{font-weight:600;font-size:12px;margin-bottom:2px;}
+.rd{font-size:12px;color:var(--muted);line-height:1.5;}
 
-  .perfil-list{display:flex;flex-direction:column;gap:8px;}
-  .perfil-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--gris-light);border-radius:9px;border-left:4px solid var(--gris);}
-  .perfil-item.top{border-left-color:var(--rojo);} .perfil-item.medium{border-left-color:var(--naranja);}
-  .pi-icon{font-size:17px;flex-shrink:0;} .pi-name{font-weight:600;font-size:13px;flex:1;} .pi-desc{font-size:11px;color:var(--texto-muted);}
-  .pi-pct{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--rojo);flex-shrink:0;}
+.sent-bar{display:flex;border-radius:7px;overflow:hidden;height:23px;margin:8px 0;}
+.ss{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:white;}
+.sleg{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap;margin-bottom:8px;}
+.sd{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px;}
 
-  .bar-list{display:flex;flex-direction:column;gap:9px;}
-  .bar-item{display:flex;flex-direction:column;gap:3px;}
-  .bar-label{font-size:12px;font-weight:500;display:flex;justify-content:space-between;}
-  .bar-label span{color:var(--texto-muted);font-size:11px;}
-  .bar-track{background:var(--gris-light);border-radius:6px;height:7px;overflow:hidden;}
-  .bar-fill{height:100%;border-radius:6px;transition:width .8s ease;}
-  .bf-red{background:var(--rojo);} .bf-ora{background:var(--naranja);} .bf-grn{background:var(--verde);} .bf-blu{background:var(--azul);} .bf-yel{background:var(--amarillo);}
+.ql{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px;}
+.ql.r{color:var(--rojo);} .ql.g{color:var(--verde);}
+.qi{padding:8px 11px;border-radius:7px;font-size:12px;border-left:3px solid var(--borde);font-style:italic;line-height:1.5;margin-bottom:5px;}
+.qi.obj{border-left-color:var(--rojo);background:var(--rojo-light);color:var(--rojo-dark);}
+.qi.pos{border-left-color:var(--verde);background:var(--verde-light);color:#1A7A42;}
 
-  .rec-list{display:flex;flex-direction:column;gap:10px;}
-  .rec-item{display:flex;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--borde);border-left-width:4px;}
-  .rec-item.urgente{border-left-color:var(--rojo);} .rec-item.importante{border-left-color:var(--naranja);} .rec-item.sugerencia{border-left-color:var(--azul);}
-  .rec-icon{font-size:19px;flex-shrink:0;} .rec-c{flex:1;}
-  .rec-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:2px 8px;border-radius:20px;margin-bottom:3px;display:inline-block;}
-  .rec-badge.urgente{background:var(--rojo-light);color:var(--rojo);}
-  .rec-badge.importante{background:var(--naranja-light);color:var(--naranja);}
-  .rec-badge.sugerencia{background:var(--azul-light);color:var(--azul);}
-  .rec-title{font-weight:600;font-size:13px;margin-bottom:3px;}
-  .rec-desc{font-size:12px;color:var(--texto-muted);line-height:1.5;}
-
-  .sent-bar{display:flex;border-radius:8px;overflow:hidden;height:25px;margin:10px 0;}
-  .sent-seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;}
-  .sent-legend{display:flex;gap:14px;font-size:12px;color:var(--texto-muted);flex-wrap:wrap;}
-  .s-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
-
-  .sublabel{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:12px;}
-  .sublabel.red{color:var(--rojo);} .sublabel.grn{color:var(--verde);}
-  .quote-item{padding:8px 12px;border-radius:8px;font-size:12px;border-left:3px solid var(--borde);font-style:italic;line-height:1.5;margin-bottom:6px;}
-  .quote-item.obj{border-left-color:var(--rojo);background:var(--rojo-light);color:var(--rojo-dark);}
-  .quote-item.pos{border-left-color:var(--verde);background:var(--verde-light);color:#1A7A42;}
-
-  .footer-note{text-align:center;color:var(--texto-muted);font-size:12px;margin-top:32px;padding-top:18px;border-top:1px solid var(--borde);}
+footer{text-align:center;color:var(--muted);font-size:11px;margin-top:28px;padding-top:16px;border-top:1px solid var(--borde);}
 </style>
 </head>
 <body>
-
 <div class="header">
-  <div class="header-logo">🍕 Pizza<span>Insights</span></div>
-  <div class="header-badge">Gemini AI</div>
-  <div class="header-sub">Análisis de conversaciones WhatsApp</div>
+  <div class="logo">🍕 Pizza<span>Insights</span></div>
+  <div class="badge">Gemini AI</div>
 </div>
 
-<div class="container">
+<div class="wrap">
 
-  <!-- API KEY GEMINI -->
-  <div class="api-banner">
-    <div style="flex:1;min-width:200px;">
-      <div class="api-banner-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#4285F4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        API Key de Google Gemini — GRATIS
-      </div>
-      <div class="api-banner-desc">
-        1. Ve a <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>
-        2. Clic en <strong style="color:white;">"Create API key"</strong> → copia la key<br>
-        3. Pégala aquí abajo. Sin tarjeta, sin costo.
-      </div>
+  <div class="key-box">
+    <div class="key-left">
+      <div class="key-title">🔑 API Key de Google Gemini — GRATIS</div>
+      <div class="key-desc">1. Ve a <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>2. Clic en <strong style="color:white">"Create API key"</strong> → copia la key<br>3. Pégala aquí. Sin tarjeta, sin costo.</div>
     </div>
-    <div style="flex:2;min-width:280px;">
-      <div class="api-input-wrap">
-        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." autocomplete="off" class="api-input" />
-        <button onclick="saveKey()" class="btn-save">Guardar</button>
+    <div class="key-right">
+      <div class="key-row">
+        <input type="password" id="keyInput" class="key-input" placeholder="AIzaSy... o AQ.Ab8..." autocomplete="off">
+        <button class="key-btn" onclick="saveKey()">Guardar</button>
       </div>
       <div id="keyStatus" class="key-status"></div>
     </div>
   </div>
 
-  <!-- GEMINI NOTE -->
-  <div class="gemini-note">
-    <span style="font-size:18px;flex-shrink:0;">✅</span>
-    <div>
-      <strong>100% gratis con Google AI Studio</strong>
-      Gemini 1.5 Flash tiene capa gratuita generosa (1500 requests/día). No necesitas tarjeta de crédito. La key se guarda solo en tu navegador.
+  <div class="instr">
+    <div class="instr-title">📱 ¿Cómo exportar chats de WhatsApp?</div>
+    <div class="instr-grid">
+      <div class="instr-step"><div class="sn">1</div><div class="st">Abre un chat en tu <strong>celular</strong></div></div>
+      <div class="instr-step"><div class="sn">2</div><div class="st">Toca <strong>⋮ → Más → Exportar chat</strong></div></div>
+      <div class="instr-step"><div class="sn">3</div><div class="st">Elige <strong>"Sin archivos"</strong> → guarda el .txt</div></div>
+      <div class="instr-step"><div class="sn">4</div><div class="st">Repite y <strong>sube todos aquí juntos</strong></div></div>
     </div>
   </div>
 
-  <!-- INSTRUCCIONES WHATSAPP -->
-  <div class="tip-box">
-    <div class="tip-title">📱 ¿Cómo exportar chats de WhatsApp?</div>
-    <div class="tip-steps">
-      <div class="tip-step"><div class="step-n">1</div><div class="step-t">Abre un chat en tu <strong>celular</strong></div></div>
-      <div class="tip-step"><div class="step-n">2</div><div class="step-t">Toca <strong>⋮ → Más → Exportar chat</strong></div></div>
-      <div class="tip-step"><div class="step-n">3</div><div class="step-t">Elige <strong>"Sin archivos"</strong> → guarda el .txt</div></div>
-      <div class="tip-step"><div class="step-n">4</div><div class="step-t">Repite y <strong>sube todos aquí juntos</strong></div></div>
-    </div>
+  <div class="upload-area" id="dropzone">
+    <div class="u-icon">📂</div>
+    <div class="u-title">Sube tus chats exportados</div>
+    <div class="u-desc">Arrastra los archivos .txt aquí o haz clic para seleccionarlos<br>Puedes subir múltiples archivos a la vez</div>
+    <div class="u-badge">Archivos .txt exportados de WhatsApp</div>
   </div>
+  <input type="file" id="fileInput" multiple accept=".txt" style="display:none">
 
-  <!-- UPLOAD -->
-  <input type="file" id="fileInput" multiple accept=".txt,.text,text/plain,*/*" style="display:none;" />
-  <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
-    <div class="upload-icon">📂</div>
-    <div class="upload-title">Sube tus chats exportados</div>
-    <div class="upload-desc">Arrastra los archivos .txt aquí o haz clic para seleccionarlos<br>Puedes subir múltiples archivos a la vez</div>
-    <div class="upload-badge">Formato: archivos .txt exportados de WhatsApp</div>
-  </div>
+  <div class="chips" id="chips"></div>
 
-  <div class="files-list" id="filesList"></div>
+  <button class="btn-main" id="btnOk" disabled onclick="doAnalyze()">🔍 Analizar conversaciones con IA</button>
 
-  <button class="btn-analyze" id="btnAnalyze" disabled onclick="doAnalyze()">
-    🔍 Analizar conversaciones con IA
-  </button>
-
-  <div class="progress-wrap" id="progressWrap">
-    <div class="proc-msg"><div class="spinner"></div><span id="procText">Procesando...</span></div>
+  <div class="prog-wrap" id="progWrap">
+    <div class="prog-msg"><div class="spin"></div><span id="progMsg">Procesando...</span></div>
     <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
     <div class="prog-text" id="progText"></div>
   </div>
 
-  <!-- RESULTS -->
-  <div class="results-section" id="resultsSection">
-    <div class="sec-title">📊 Resumen general</div>
-    <div class="stats-grid" id="statsGrid"></div>
-    <div class="sec-title">🔍 Análisis detallado</div>
-    <div class="analysis-grid">
-      <div class="a-card"><div class="card-title"><div class="dot red"></div>Objeciones frecuentes</div><div id="obj-c"></div></div>
-      <div class="a-card"><div class="card-title"><div class="dot ora"></div>Perfiles de clientes</div><div id="perf-c"></div></div>
-      <div class="a-card"><div class="card-title"><div class="dot grn"></div>Productos más consultados</div><div id="prod-c"></div></div>
-      <div class="a-card"><div class="card-title"><div class="dot yel"></div>Patrones de horario</div><div id="hor-c"></div></div>
-      <div class="a-card full"><div class="card-title"><div class="dot blu"></div>Sentimiento general</div><div id="sent-c"></div></div>
-      <div class="a-card full"><div class="card-title"><div class="dot red"></div>Frases y patrones textuales</div><div id="fras-c"></div></div>
-      <div class="a-card full"><div class="card-title"><div class="dot ora"></div>Recomendaciones accionables</div><div id="rec-c"></div></div>
+  <div class="results" id="results">
+    <div class="sec">📊 Resumen general</div>
+    <div class="sgrid" id="sgrid"></div>
+    <div class="sec">🔍 Análisis detallado</div>
+    <div class="agrid">
+      <div class="ac"><div class="ct"><div class="dot dr"></div>Objeciones frecuentes</div><div id="r-obj"></div></div>
+      <div class="ac"><div class="ct"><div class="dot do"></div>Perfiles de clientes</div><div id="r-perf"></div></div>
+      <div class="ac"><div class="ct"><div class="dot dg"></div>Productos consultados</div><div id="r-prod"></div></div>
+      <div class="ac"><div class="ct"><div class="dot dy"></div>Horarios pico</div><div id="r-hor"></div></div>
+      <div class="ac full"><div class="ct"><div class="dot db"></div>Sentimiento general</div><div id="r-sent"></div></div>
+      <div class="ac full"><div class="ct"><div class="dot dr"></div>Frases textuales</div><div id="r-fras"></div></div>
+      <div class="ac full"><div class="ct"><div class="dot do"></div>Recomendaciones</div><div id="r-rec"></div></div>
     </div>
   </div>
 
-  <div class="footer-note">PizzaInsights · Powered by Google Gemini (gratis) · Tu key se guarda solo en este navegador</div>
+  <footer>PizzaInsights · Powered by Google Gemini · Tu key se guarda solo en este navegador</footer>
 </div>
 
 <script>
-// ---- KEY ----
-(function(){
-  var k = localStorage.getItem('pizza_gemini_key') || '';
-  if (k && k.length >= 10) {
-    document.getElementById('apiKeyInput').value = k;
-    document.getElementById('keyStatus').innerHTML = '<span class="key-ok">✅ Key guardada</span>';
-  }
-  checkBtn();
-})();
+var files = [];
+
+// KEY
+var savedKey = localStorage.getItem('gemini_key') || '';
+if (savedKey) {
+  document.getElementById('keyInput').value = savedKey;
+  document.getElementById('keyStatus').innerHTML = '<span style="color:#34A853">✅ Key guardada</span>';
+}
 
 function saveKey() {
-  var k = document.getElementById('apiKeyInput').value.trim();
-  if (k.length < 10) {
-    document.getElementById('keyStatus').innerHTML = '<span class="key-err">❌ Key demasiado corta, verifica que la copiaste completa</span>';
+  var k = document.getElementById('keyInput').value.trim();
+  if (k.length < 8) {
+    document.getElementById('keyStatus').innerHTML = '<span style="color:#EA4335">❌ Key muy corta</span>';
     return;
   }
-  localStorage.setItem('pizza_gemini_key', k);
-  document.getElementById('keyStatus').innerHTML = '<span class="key-ok">✅ Key guardada correctamente</span>';
-  checkBtn();
+  localStorage.setItem('gemini_key', k);
+  document.getElementById('keyStatus').innerHTML = '<span style="color:#34A853">✅ Key guardada</span>';
+  updateBtn();
 }
 
-function checkBtn() {
-  var k = localStorage.getItem('pizza_gemini_key') || '';
-  var ok = k.length >= 10 && filesData.length > 0;
-  document.getElementById('btnAnalyze').disabled = !ok;
+function updateBtn() {
+  var k = localStorage.getItem('gemini_key') || '';
+  document.getElementById('btnOk').disabled = files.length === 0 || k.length < 8;
 }
 
-// ---- FILES ----
-var filesData = [];
-
+// FILE UPLOAD
 var dz = document.getElementById('dropzone');
-dz.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add('drag'); });
-dz.addEventListener('dragover', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag'); });
-dz.addEventListener('drop', function(e){
-  e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag');
-  var dropped = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
-  if (dropped.length === 0) { alert('No se detectaron archivos al soltar.'); return; }
-  handleFiles(dropped);
-});
-document.getElementById('fileInput').addEventListener('change', function(){
-  if (this.files && this.files.length > 0) handleFiles(Array.from(this.files));
+var fi = document.getElementById('fileInput');
+
+dz.addEventListener('click', function() { fi.click(); });
+
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('over'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dz.classList.remove('over');
+  loadFiles(e.dataTransfer.files);
 });
 
-function handleFiles(newFiles) {
-  newFiles.forEach(function(file){
-    if (!filesData.find(function(f){ return f.name === file.name; })) {
-      var r = new FileReader();
-      r.onload = function(e){
-        filesData.push({ name: file.name, content: e.target.result });
+fi.addEventListener('change', function() {
+  loadFiles(fi.files);
+});
+
+function loadFiles(fileList) {
+  for (var i = 0; i < fileList.length; i++) {
+    (function(f) {
+      if (files.find(function(x) { return x.name === f.name; })) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        files.push({ name: f.name, text: e.target.result });
         renderChips();
-        checkBtn();
+        updateBtn();
       };
-      r.readAsText(file, 'UTF-8');
-    }
-  });
+      reader.readAsText(f);
+    })(fileList[i]);
+  }
 }
 
 function renderChips() {
-  document.getElementById('filesList').innerHTML = filesData.map(function(f, i){
-    return '<div class="file-chip">💬 ' + f.name + ' <span style="opacity:.6">(' + f.content.split('\n').length + ' líneas)</span>' +
-      '<button onclick="removeFile(' + i + ')">×</button></div>';
-  }).join('');
+  var html = '';
+  for (var i = 0; i < files.length; i++) {
+    html += '<div class="chip">💬 ' + files[i].name +
+      ' <button onclick="removeFile(' + i + ')">×</button></div>';
+  }
+  document.getElementById('chips').innerHTML = html;
 }
 
-function removeFile(i){ filesData.splice(i,1); renderChips(); checkBtn(); }
-
-// ---- PARSE WHATSAPP ----
-function parseChats(files) {
-  var all = [];
-  files.forEach(function(file){
-    var lines = file.content.split('\n');
-    var chatName = file.name.replace('Chat de WhatsApp con ','').replace('.txt','');
-    lines.forEach(function(line){
-      var m = line.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s*(\d{1,2}:\d{2})(?::\d{2})?\s*[-\u2013]\s*([^:]+):\s*(.+)$/);
-      if (m) all.push({ date:m[1], time:m[2], hour:parseInt(m[2]), sender:m[3].trim(), message:m[4].trim(), chat:chatName });
-    });
-  });
-  return all;
+function removeFile(i) {
+  files.splice(i, 1);
+  renderChips();
+  updateBtn();
 }
 
-// ---- ANALYZE ----
+// PARSE
+function parseAll() {
+  var msgs = [];
+  for (var i = 0; i < files.length; i++) {
+    var lines = files[i].text.split('\n');
+    var chat = files[i].name.replace('Chat de WhatsApp con ', '').replace('.txt', '');
+    for (var j = 0; j < lines.length; j++) {
+      var m = lines[j].match(/^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s*(\d{1,2}:\d{2})(?::\d{2})?\s*[-\u2013]\s*([^:]+):\s*(.+)$/);
+      if (m) msgs.push({ time: m[2], hour: parseInt(m[2]), sender: m[3].trim(), msg: m[4].trim(), chat: chat });
+    }
+  }
+  return msgs;
+}
+
+// ANALYZE
 async function doAnalyze() {
-  var key = localStorage.getItem('pizza_gemini_key') || '';
-  if (!key) { alert('Primero guarda tu API key de Gemini.'); return; }
-  if (!filesData.length) { alert('Sube al menos un archivo .txt de WhatsApp.'); return; }
+  var key = localStorage.getItem('gemini_key') || '';
+  if (!key || files.length === 0) return;
 
-  document.getElementById('btnAnalyze').disabled = true;
-  document.getElementById('progressWrap').style.display = 'block';
-  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('btnOk').disabled = true;
+  document.getElementById('progWrap').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
 
-  setP(5, 'Parseando archivos de WhatsApp...');
-  var msgs = parseChats(filesData);
+  setP(5, 'Parseando archivos...');
+  var msgs = parseAll();
 
   if (msgs.length < 3) {
-    alert('No se detectaron mensajes. Asegúrate de que los archivos son exportaciones .txt de WhatsApp.');
-    document.getElementById('btnAnalyze').disabled = false;
-    document.getElementById('progressWrap').style.display = 'none';
+    alert('No se detectaron mensajes en formato WhatsApp. Verifica que los archivos son exportaciones .txt de WhatsApp.');
+    document.getElementById('btnOk').disabled = false;
+    document.getElementById('progWrap').style.display = 'none';
     return;
   }
 
-  var chats = new Set(msgs.map(function(m){ return m.chat; })).size;
-  var hc = {}; msgs.forEach(function(m){ hc[m.hour]=(hc[m.hour]||0)+1; });
+  var chats = {};
+  var hc = {};
+  msgs.forEach(function(m) {
+    chats[m.chat] = 1;
+    hc[m.hour] = (hc[m.hour] || 0) + 1;
+  });
+  var nChats = Object.keys(chats).length;
   var peak = Object.entries(hc).sort(function(a,b){ return b[1]-a[1]; })[0];
 
-  setP(20, 'Preparando muestra (' + msgs.length + ' mensajes, ' + chats + ' chats)...');
+  setP(20, 'Preparando muestra (' + msgs.length + ' mensajes, ' + nChats + ' chats)...');
 
-  var sample = msgs.slice(0,450).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.message; }).join('\n');
+  var sample = msgs.slice(0, 450).map(function(m) {
+    return '[' + m.time + '] ' + m.sender + ': ' + m.msg;
+  }).join('\n');
 
-  var prompt = 'Eres un experto en análisis de negocios para una PIZZERÍA de delivery en Chimbote, Perú (se llama Vera Pizza). Analiza estas conversaciones reales de WhatsApp y extrae insights accionables.\n\nDATOS:\n- Total mensajes: ' + msgs.length + '\n- Clientes (chats): ' + chats + '\n- Hora pico: ' + (peak ? peak[0]+':00' : 'N/A') + '\n\nCONVERSACIONES:\n' + sample + '\n\nResponde ÚNICAMENTE con JSON válido (sin markdown, sin texto extra, sin ```json):\n{\n  "stats": {\n    "tasa_conversion_estimada": "XX%",\n    "ticket_promedio_percibido": "descripción breve",\n    "nivel_satisfaccion": "Alto/Medio/Bajo — razón"\n  },\n  "objeciones": [\n    { "texto": "objeción detectada", "frecuencia": "Alta/Media/Baja", "respuesta_sugerida": "respuesta efectiva" }\n  ],\n  "perfiles_clientes": [\n    { "nombre": "nombre del perfil", "icono": "emoji", "descripcion": "descripción breve", "porcentaje": 30, "tipo": "top/medium/low" }\n  ],\n  "productos_mencionados": [\n    { "producto": "nombre", "menciones": 10, "contexto": "pedido/consulta/queja" }\n  ],\n  "horarios_pico": [\n    { "franja": "nombre franja", "horas": "HH:00-HH:00", "porcentaje": 40, "color": "red/orange/yellow/green/blue" }\n  ],\n  "sentimiento": { "positivo": 45, "neutral": 35, "negativo": 20, "resumen": "2 líneas" },\n  "frases_objecion": ["frase 1","frase 2","frase 3"],\n  "frases_positivas": ["frase 1","frase 2","frase 3"],\n  "recomendaciones": [\n    { "titulo": "título corto", "descripcion": "acción concreta", "prioridad": "urgente/importante/sugerencia", "icono": "emoji" }\n  ]\n}';
+  var prompt = 'Eres experto en análisis de negocios para una PIZZERÍA de delivery en Chimbote, Perú. Analiza estas conversaciones reales de WhatsApp y extrae insights.\n\nDATOS:\n- Mensajes: ' + msgs.length + '\n- Clientes: ' + nChats + '\n- Hora pico: ' + (peak ? peak[0]+':00' : 'N/A') + '\n\nCONVERSACIONES:\n' + sample + '\n\nResponde SOLO JSON sin markdown:\n{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"texto","nivel_satisfaccion":"Alto/Medio/Bajo"},"objeciones":[{"texto":"texto","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"texto"}],"perfiles_clientes":[{"nombre":"texto","icono":"emoji","descripcion":"texto","porcentaje":30,"tipo":"top/medium/low"}],"productos_mencionados":[{"producto":"texto","menciones":5,"contexto":"pedido/consulta/queja"}],"horarios_pico":[{"franja":"texto","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"texto"},"frases_objecion":["texto"],"frases_positivas":["texto"],"recomendaciones":[{"titulo":"texto","descripcion":"texto","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
 
   try {
-    setP(35, 'Enviando a Gemini para análisis...');
-
+    setP(40, 'Enviando a Gemini...');
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key;
     var res = await fetch(url, {
       method: 'POST',
@@ -355,137 +335,121 @@ async function doAnalyze() {
       })
     });
 
-    setP(75, 'Procesando respuesta de Gemini...');
+    setP(75, 'Procesando respuesta...');
 
     if (!res.ok) {
-      var errData = await res.json();
-      var errMsg = errData.error ? errData.error.message : 'Error ' + res.status;
-      throw new Error(errMsg);
+      var ed = await res.json();
+      throw new Error((ed.error && ed.error.message) || 'Error ' + res.status);
     }
 
     var data = await res.json();
     var raw = data.candidates[0].content.parts[0].text;
-    var clean = raw.replace(/```json|```/g,'').trim();
+    var clean = raw.replace(/```json|```/g, '').trim();
+    var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+    if (s !== -1 && e !== -1) clean = clean.substring(s, e + 1);
+    var r = JSON.parse(clean);
 
-    // Find JSON boundaries in case there's extra text
-    var start = clean.indexOf('{');
-    var end = clean.lastIndexOf('}');
-    if (start !== -1 && end !== -1) clean = clean.substring(start, end+1);
-
-    var result = JSON.parse(clean);
-
-    setP(92, 'Generando dashboard...');
-    await new Promise(function(r){ setTimeout(r,300); });
-
-    renderResults(result, msgs.length, chats, peak);
-    setP(100, '¡Análisis completado!');
-
-    setTimeout(function(){
-      document.getElementById('progressWrap').style.display = 'none';
-      document.getElementById('resultsSection').style.display = 'block';
-      document.getElementById('resultsSection').scrollIntoView({ behavior:'smooth' });
-    }, 500);
+    setP(95, 'Generando dashboard...');
+    await new Promise(function(x){ setTimeout(x, 200); });
+    render(r, msgs.length, nChats, peak);
+    setP(100, '¡Listo!');
+    setTimeout(function() {
+      document.getElementById('progWrap').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    }, 400);
 
   } catch(err) {
-    console.error(err);
     var msg = err.message || 'Error desconocido';
-    if (msg.includes('API_KEY_INVALID') || msg.includes('400')) msg = 'API Key inválida. Verifica que copiaste correctamente la key de Google AI Studio.';
-    if (msg.includes('PERMISSION_DENIED') || msg.includes('403')) msg = 'Key sin permisos. Crea una nueva key en aistudio.google.com/apikey';
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) msg = 'Error de red. Verifica tu conexión a internet.';
+    if (msg.indexOf('API_KEY_INVALID') !== -1 || msg.indexOf('400') !== -1) msg = 'API Key inválida. Verifica en aistudio.google.com/apikey';
+    if (msg.indexOf('403') !== -1) msg = 'Sin permisos. Crea una nueva key en aistudio.google.com/apikey';
     alert('Error: ' + msg);
-    document.getElementById('btnAnalyze').disabled = false;
-    document.getElementById('progressWrap').style.display = 'none';
+    document.getElementById('btnOk').disabled = false;
+    document.getElementById('progWrap').style.display = 'none';
   }
 }
 
 function setP(pct, text) {
   document.getElementById('progFill').style.width = pct + '%';
   document.getElementById('progText').textContent = text;
-  document.getElementById('procText').textContent = text;
+  document.getElementById('progMsg').textContent = text;
 }
 
-// ---- RENDER ----
-function renderResults(r, totalMsg, chats, peak) {
+// RENDER
+function render(r, total, nChats, peak) {
+  var cols = ['bfr','bfo','bfg','bfb','bfy'];
+
   // Stats
-  document.getElementById('statsGrid').innerHTML =
-    sc('Total mensajes', totalMsg, '') +
-    sc('Clientes analizados', chats, 'red') +
-    sc('Hora pico', peak ? peak[0]+':00' : '—', 'orange') +
-    sc('Satisfacción', r.stats ? r.stats.nivel_satisfaccion.split('/')[0].split('—')[0].trim() : '—', 'green') +
-    sc('Conversión est.', r.stats ? r.stats.tasa_conversion_estimada : '—', '') +
-    sc('Precio percibido', r.stats ? r.stats.ticket_promedio_percibido : '—', 'orange');
+  document.getElementById('sgrid').innerHTML =
+    sc('Total mensajes', total, '') + sc('Clientes', nChats, 'r') +
+    sc('Hora pico', peak ? peak[0]+':00' : '—', 'o') +
+    sc('Satisfacción', r.stats ? r.stats.nivel_satisfaccion.split(/[\/—]/)[0].trim() : '—', 'g') +
+    sc('Conversión', r.stats ? r.stats.tasa_conversion_estimada : '—', '') +
+    sc('Precio percibido', r.stats ? r.stats.ticket_promedio_percibido : '—', 'o');
 
   // Objeciones
   var obj = r.objeciones || [];
-  document.getElementById('obj-c').innerHTML = obj.map(function(o){
-    return '<div style="margin-bottom:11px;padding:10px;background:var(--rojo-light);border-radius:9px;border-left:3px solid var(--rojo);">' +
-      '<div style="font-weight:600;font-size:12px;color:var(--rojo-dark);margin-bottom:3px;">❝ '+o.texto+'</div>' +
-      '<div style="font-size:10px;color:var(--gris);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;">Frecuencia: '+o.frecuencia+'</div>' +
-      '<div style="font-size:12px;color:#2c3e50;background:white;padding:7px 10px;border-radius:6px;">💡 '+o.respuesta_sugerida+'</div></div>';
-  }).join('') || '<p style="color:var(--texto-muted);font-size:13px;text-align:center;padding:20px;">Sin objeciones claras detectadas</p>';
+  document.getElementById('r-obj').innerHTML = obj.map(function(o) {
+    return '<div style="margin-bottom:10px;padding:10px;background:var(--rojo-light);border-radius:8px;border-left:3px solid var(--rojo);">' +
+      '<div style="font-weight:600;font-size:12px;color:var(--rojo-dark);margin-bottom:3px;">❝ ' + o.texto + '</div>' +
+      '<div style="font-size:10px;color:var(--gris);margin-bottom:4px;text-transform:uppercase;">Frecuencia: ' + o.frecuencia + '</div>' +
+      '<div style="font-size:12px;background:white;padding:6px 9px;border-radius:5px;">💡 ' + o.respuesta_sugerida + '</div></div>';
+  }).join('') || '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin objeciones detectadas</p>';
 
   // Perfiles
-  var perfs = r.perfiles_clientes || [];
-  document.getElementById('perf-c').innerHTML = '<div class="perfil-list">' + perfs.map(function(p){
-    return '<div class="perfil-item '+(p.tipo||'low')+'">' +
-      '<div class="pi-icon">'+p.icono+'</div>' +
-      '<div style="flex:1"><div class="pi-name">'+p.nombre+'</div><div class="pi-desc">'+p.descripcion+'</div></div>' +
-      '<div class="pi-pct">'+p.porcentaje+'%</div></div>';
+  document.getElementById('r-perf').innerHTML = '<div class="perfs">' + (r.perfiles_clientes || []).map(function(p) {
+    return '<div class="perf ' + (p.tipo||'low') + '"><div class="pi">' + p.icono + '</div>' +
+      '<div style="flex:1"><div class="pn">' + p.nombre + '</div><div class="pd">' + p.descripcion + '</div></div>' +
+      '<div class="pp">' + p.porcentaje + '%</div></div>';
   }).join('') + '</div>';
 
   // Productos
   var prods = r.productos_mencionados || [];
   var maxM = prods.length ? Math.max.apply(null, prods.map(function(p){ return p.menciones; })) : 1;
-  var bfcols = ['bf-red','bf-ora','bf-grn','bf-blu','bf-yel'];
-  document.getElementById('prod-c').innerHTML = '<div class="bar-list">' + prods.slice(0,8).map(function(p,i){
-    return '<div class="bar-item"><div class="bar-label">'+p.producto+'<span>'+p.menciones+' · '+p.contexto+'</span></div>' +
-      '<div class="bar-track"><div class="bar-fill '+bfcols[i%bfcols.length]+'" style="width:'+Math.round(p.menciones/maxM*100)+'%"></div></div></div>';
+  document.getElementById('r-prod').innerHTML = '<div class="bars">' + prods.slice(0,8).map(function(p,i) {
+    return '<div class="bar-i"><div class="bl">' + p.producto + '<span>' + p.menciones + ' · ' + p.contexto + '</span></div>' +
+      '<div class="bt"><div class="bf ' + cols[i%cols.length] + '" style="width:' + Math.round(p.menciones/maxM*100) + '%"></div></div></div>';
   }).join('') + '</div>';
 
   // Horarios
-  var hor = r.horarios_pico || [];
-  document.getElementById('hor-c').innerHTML = '<div class="bar-list">' + hor.map(function(h){
-    var bc = {red:'bf-red',orange:'bf-ora',green:'bf-grn',blue:'bf-blu',yellow:'bf-yel'}[h.color] || 'bf-ora';
-    return '<div class="bar-item"><div class="bar-label">'+h.franja+'<span>'+h.horas+'</span></div>' +
-      '<div class="bar-track"><div class="bar-fill '+bc+'" style="width:'+h.porcentaje+'%"></div></div></div>';
+  var horMap = {red:'bfr',orange:'bfo',green:'bfg',blue:'bfb',yellow:'bfy'};
+  document.getElementById('r-hor').innerHTML = '<div class="bars">' + (r.horarios_pico||[]).map(function(h) {
+    return '<div class="bar-i"><div class="bl">' + h.franja + '<span>' + h.horas + '</span></div>' +
+      '<div class="bt"><div class="bf ' + (horMap[h.color]||'bfo') + '" style="width:' + h.porcentaje + '%"></div></div></div>';
   }).join('') + '</div>';
 
   // Sentimiento
   var s = r.sentimiento || {positivo:33,neutral:34,negativo:33,resumen:''};
-  document.getElementById('sent-c').innerHTML =
+  document.getElementById('r-sent').innerHTML =
     '<div class="sent-bar">' +
-    '<div class="sent-seg" style="width:'+s.positivo+'%;background:var(--verde);">'+s.positivo+'%</div>' +
-    '<div class="sent-seg" style="width:'+s.neutral+'%;background:var(--gris);">'+s.neutral+'%</div>' +
-    '<div class="sent-seg" style="width:'+s.negativo+'%;background:var(--rojo);">'+s.negativo+'%</div>' +
-    '</div>' +
-    '<div class="sent-legend" style="margin-bottom:10px;">' +
-    '<span><span class="s-dot" style="background:var(--verde)"></span>Positivo '+s.positivo+'%</span>' +
-    '<span><span class="s-dot" style="background:var(--gris)"></span>Neutral '+s.neutral+'%</span>' +
-    '<span><span class="s-dot" style="background:var(--rojo)"></span>Negativo '+s.negativo+'%</span>' +
-    '</div><p style="font-size:13px;color:var(--texto-muted);line-height:1.6;">'+(s.resumen||'')+'</p>';
+    '<div class="ss" style="width:' + s.positivo + '%;background:var(--verde);">' + s.positivo + '%</div>' +
+    '<div class="ss" style="width:' + s.neutral + '%;background:var(--gris);">' + s.neutral + '%</div>' +
+    '<div class="ss" style="width:' + s.negativo + '%;background:var(--rojo);">' + s.negativo + '%</div>' +
+    '</div><div class="sleg">' +
+    '<span><span class="sd" style="background:var(--verde)"></span>Positivo ' + s.positivo + '%</span>' +
+    '<span><span class="sd" style="background:var(--gris)"></span>Neutral ' + s.neutral + '%</span>' +
+    '<span><span class="sd" style="background:var(--rojo)"></span>Negativo ' + s.negativo + '%</span>' +
+    '</div><p style="font-size:13px;color:var(--muted);line-height:1.6;">' + (s.resumen||'') + '</p>';
 
   // Frases
-  var fo = r.frases_objecion || [];
-  var fp = r.frases_positivas || [];
-  document.getElementById('fras-c').innerHTML =
-    '<div class="sublabel red">Frases de objeción</div>' +
-    fo.map(function(f){ return '<div class="quote-item obj">❝ '+f+' ❞</div>'; }).join('') +
-    '<div class="sublabel grn" style="margin-top:14px;">Frases positivas</div>' +
-    fp.map(function(f){ return '<div class="quote-item pos">❝ '+f+' ❞</div>'; }).join('');
+  document.getElementById('r-fras').innerHTML =
+    '<div class="ql r">Frases de objeción</div>' +
+    (r.frases_objecion||[]).map(function(f){ return '<div class="qi obj">❝ ' + f + ' ❞</div>'; }).join('') +
+    '<div class="ql g">Frases positivas</div>' +
+    (r.frases_positivas||[]).map(function(f){ return '<div class="qi pos">❝ ' + f + ' ❞</div>'; }).join('');
 
   // Recomendaciones
-  var recs = r.recomendaciones || [];
-  document.getElementById('rec-c').innerHTML = '<div class="rec-list">' + recs.map(function(rec){
-    return '<div class="rec-item '+(rec.prioridad||'sugerencia')+'">' +
-      '<div class="rec-icon">'+rec.icono+'</div>' +
-      '<div class="rec-c"><div class="rec-badge '+(rec.prioridad||'sugerencia')+'">'+(rec.prioridad||'').toUpperCase()+'</div>' +
-      '<div class="rec-title">'+rec.titulo+'</div>' +
-      '<div class="rec-desc">'+rec.descripcion+'</div></div></div>';
+  document.getElementById('r-rec').innerHTML = '<div class="recs">' + (r.recomendaciones||[]).map(function(rec) {
+    var p = rec.prioridad || 'sugerencia';
+    return '<div class="rec ' + p + '"><div class="ri">' + rec.icono + '</div>' +
+      '<div><div class="rb ' + p + '">' + p.toUpperCase() + '</div>' +
+      '<div class="rt">' + rec.titulo + '</div>' +
+      '<div class="rd">' + rec.descripcion + '</div></div></div>';
   }).join('') + '</div>';
 }
 
-function sc(label, val, color) {
-  return '<div class="stat-card"><div class="stat-label">'+label+'</div><div class="stat-value '+color+'">'+val+'</div></div>';
+function sc(l, v, c) {
+  return '<div class="sc"><div class="sl">' + l + '</div><div class="sv ' + c + '">' + v + '</div></div>';
 }
 </script>
 </body>
