@@ -192,7 +192,7 @@
 
   <!-- UPLOAD -->
   <div class="upload-zone" id="dropzone">
-    <input type="file" id="fileInput" multiple accept=".txt" />
+    <input type="file" id="fileInput" multiple accept=".txt,.text,text/plain,*/*" />
     <div class="upload-icon">📂</div>
     <div class="upload-title">Sube tus chats exportados</div>
     <div class="upload-desc">Arrastra los archivos .txt aquí o haz clic para seleccionarlos<br>Puedes subir múltiples archivos a la vez</div>
@@ -266,20 +266,49 @@ dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.ad
 dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
 dz.addEventListener('drop', function(e){
   e.preventDefault(); dz.classList.remove('drag');
-  handleFiles(Array.from(e.dataTransfer.files).filter(function(f){ return f.name.endsWith('.txt'); }));
+  handleFiles(Array.from(e.dataTransfer.files));
 });
 document.getElementById('fileInput').addEventListener('change', function(){
   handleFiles(Array.from(this.files));
 });
 
 function handleFiles(newFiles) {
+  if (!newFiles || newFiles.length === 0) {
+    alert('No se detectaron archivos. Intenta seleccionarlos de nuevo.');
+    return;
+  }
   newFiles.forEach(function(file){
     if (!filesData.find(function(f){ return f.name === file.name; })) {
+      // Try UTF-8 first, fallback to latin1
       var r = new FileReader();
       r.onload = function(e){
-        filesData.push({ name: file.name, content: e.target.result });
-        renderChips();
-        checkBtn();
+        var content = e.target.result;
+        // If garbled, try again with latin1
+        if (content.indexOf('�') !== -1) {
+          var r2 = new FileReader();
+          r2.onload = function(e2){
+            filesData.push({ name: file.name, content: e2.target.result });
+            renderChips();
+            checkBtn();
+          };
+          r2.onerror = function(){ alert('No se pudo leer: ' + file.name); };
+          r2.readAsText(file, 'latin1');
+        } else {
+          filesData.push({ name: file.name, content: content });
+          renderChips();
+          checkBtn();
+        }
+      };
+      r.onerror = function(){
+        // Try latin1 on error
+        var r2 = new FileReader();
+        r2.onload = function(e2){
+          filesData.push({ name: file.name, content: e2.target.result });
+          renderChips();
+          checkBtn();
+        };
+        r2.onerror = function(){ alert('No se pudo leer el archivo: ' + file.name); };
+        r2.readAsText(file, 'latin1');
       };
       r.readAsText(file, 'UTF-8');
     }
