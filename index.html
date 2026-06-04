@@ -276,42 +276,13 @@ document.getElementById('fileInput').addEventListener('change', function(){
 });
 
 function handleFiles(newFiles) {
-  if (!newFiles || newFiles.length === 0) {
-    alert('No se detectaron archivos. Intenta seleccionarlos de nuevo.');
-    return;
-  }
   newFiles.forEach(function(file){
     if (!filesData.find(function(f){ return f.name === file.name; })) {
-      // Try UTF-8 first, fallback to latin1
       var r = new FileReader();
       r.onload = function(e){
-        var content = e.target.result;
-        // If garbled, try again with latin1
-        if (content.indexOf('�') !== -1) {
-          var r2 = new FileReader();
-          r2.onload = function(e2){
-            filesData.push({ name: file.name, content: e2.target.result });
-            renderChips();
-            checkBtn();
-          };
-          r2.onerror = function(){ alert('No se pudo leer: ' + file.name); };
-          r2.readAsText(file, 'latin1');
-        } else {
-          filesData.push({ name: file.name, content: content });
-          renderChips();
-          checkBtn();
-        }
-      };
-      r.onerror = function(){
-        // Try latin1 on error
-        var r2 = new FileReader();
-        r2.onload = function(e2){
-          filesData.push({ name: file.name, content: e2.target.result });
-          renderChips();
-          checkBtn();
-        };
-        r2.onerror = function(){ alert('No se pudo leer el archivo: ' + file.name); };
-        r2.readAsText(file, 'latin1');
+        filesData.push({ name: file.name, content: e.target.result });
+        renderChips();
+        checkBtn();
       };
       r.readAsText(file, 'UTF-8');
     }
