@@ -191,8 +191,8 @@
   </div>
 
   <!-- UPLOAD -->
-  <div class="upload-zone" id="dropzone">
-    <input type="file" id="fileInput" multiple accept=".txt,.text,text/plain,*/*" />
+  <input type="file" id="fileInput" multiple accept=".txt,.text,text/plain,*/*" style="display:none;" />
+  <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()">
     <div class="upload-icon">📂</div>
     <div class="upload-title">Sube tus chats exportados</div>
     <div class="upload-desc">Arrastra los archivos .txt aquí o haz clic para seleccionarlos<br>Puedes subir múltiples archivos a la vez</div>
@@ -262,14 +262,17 @@ function checkBtn() {
 var filesData = [];
 
 var dz = document.getElementById('dropzone');
-dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('drag'); });
-dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
+dz.addEventListener('dragenter', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add('drag'); });
+dz.addEventListener('dragover', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag'); });
 dz.addEventListener('drop', function(e){
-  e.preventDefault(); dz.classList.remove('drag');
-  handleFiles(Array.from(e.dataTransfer.files));
+  e.preventDefault(); e.stopPropagation(); dz.classList.remove('drag');
+  var dropped = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+  if (dropped.length === 0) { alert('No se detectaron archivos al soltar.'); return; }
+  handleFiles(dropped);
 });
 document.getElementById('fileInput').addEventListener('change', function(){
-  handleFiles(Array.from(this.files));
+  if (this.files && this.files.length > 0) handleFiles(Array.from(this.files));
 });
 
 function handleFiles(newFiles) {
