@@ -234,7 +234,7 @@
 // ---- KEY ----
 (function(){
   var k = localStorage.getItem('pizza_gemini_key') || '';
-  if (k) {
+  if (k && k.length >= 10) {
     document.getElementById('apiKeyInput').value = k;
     document.getElementById('keyStatus').innerHTML = '<span class="key-ok">✅ Key guardada</span>';
   }
@@ -243,8 +243,8 @@
 
 function saveKey() {
   var k = document.getElementById('apiKeyInput').value.trim();
-  if (!k.startsWith('AIza')) {
-    document.getElementById('keyStatus').innerHTML = '<span class="key-err">❌ La key de Gemini empieza con AIza...</span>';
+  if (k.length < 10) {
+    document.getElementById('keyStatus').innerHTML = '<span class="key-err">❌ Key demasiado corta, verifica que la copiaste completa</span>';
     return;
   }
   localStorage.setItem('pizza_gemini_key', k);
@@ -254,7 +254,7 @@ function saveKey() {
 
 function checkBtn() {
   var k = localStorage.getItem('pizza_gemini_key') || '';
-  var ok = k.startsWith('AIza') && filesData.length > 0;
+  var ok = k.length >= 10 && filesData.length > 0;
   document.getElementById('btnAnalyze').disabled = !ok;
 }
 
