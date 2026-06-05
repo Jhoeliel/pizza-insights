@@ -325,7 +325,7 @@ async function doAnalyze() {
 
   try {
     setP(40, 'Enviando a Gemini...');
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key;
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + key;
     var res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
