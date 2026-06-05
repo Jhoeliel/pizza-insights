@@ -367,9 +367,14 @@ async function doAnalyze() {
   // Muestra completa dividida en 3 bloques para máxima representatividad
   var total = msgs.length;
   var block = Math.floor(total / 3);
-  var s1 = msgs.slice(0, block).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.msg; }).join('\n');
-  var s2 = msgs.slice(block, block*2).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.msg; }).join('\n');
-  var s3 = msgs.slice(block*2).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.msg; }).join('\n');
+  function cleanMsg(m) {
+    // Remove chars that break JSON parsing
+    var txt = m.msg.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\\/g, '').substring(0, 200);
+    return '['+m.time+'] '+m.sender.substring(0,20)+': '+txt;
+  }
+  var s1 = msgs.slice(0, block).map(cleanMsg).join('\n');
+  var s2 = msgs.slice(block, block*2).map(cleanMsg).join('\n');
+  var s3 = msgs.slice(block*2).map(cleanMsg).join('\n');
 
   var ctx = 'Pizzería delivery La Vera Pizza, Chimbote Perú. Total mensajes: '+total+', Clientes: '+nChats+', Hora pico: '+(peak?peak[0]+':00':'N/A')+'.';
 
