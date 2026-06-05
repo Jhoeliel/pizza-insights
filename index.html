@@ -352,7 +352,8 @@ async function doAnalyze() {
     var r;
     try { r = JSON.parse(clean); }
     catch(pe) {
-      console.error('JSON raw:', clean.substring(0,500));
+      // Mostrar los primeros 800 chars de la respuesta para debug
+      alert('DEBUG - Respuesta de Gemini (primeros 800 chars):\n' + clean.substring(0,800));
       throw new Error('Error al interpretar respuesta. Intenta de nuevo.');
     }
 
