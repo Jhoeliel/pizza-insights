@@ -342,11 +342,11 @@ async function doAnalyze() {
 
   setP(20, 'Preparando muestra (' + msgs.length + ' mensajes, ' + nChats + ' chats)...');
 
-  var sample = msgs.slice(0, 200).map(function(m) {
+  var sample = msgs.slice(0, 100).map(function(m) {
     return '[' + m.time + '] ' + m.sender + ': ' + m.msg;
   }).join('\n');
 
-  var prompt = 'Eres experto en análisis de negocios para una PIZZERÍA de delivery en Chimbote, Perú. Analiza estas conversaciones reales de WhatsApp y extrae insights.\n\nDATOS:\n- Mensajes: ' + msgs.length + '\n- Clientes: ' + nChats + '\n- Hora pico: ' + (peak ? peak[0]+':00' : 'N/A') + '\n\nCONVERSACIONES:\n' + sample + '\n\nResponde SOLO JSON sin markdown:\n{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"texto","nivel_satisfaccion":"Alto/Medio/Bajo"},"objeciones":[{"texto":"texto","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"texto"}],"perfiles_clientes":[{"nombre":"texto","icono":"emoji","descripcion":"texto","porcentaje":30,"tipo":"top/medium/low"}],"productos_mencionados":[{"producto":"texto","menciones":5,"contexto":"pedido/consulta/queja"}],"horarios_pico":[{"franja":"texto","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"texto"},"frases_objecion":["texto"],"frases_positivas":["texto"],"recomendaciones":[{"titulo":"texto","descripcion":"texto","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
+  var prompt = 'Analiza estas conversaciones WhatsApp de una pizzería delivery en Perú. Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.\n\nMensajes: ' + msgs.length + ' | Clientes: ' + nChats + ' | Hora pico: ' + (peak ? peak[0]+':00' : 'N/A') + '\n\nCONVERSACIONES:\n' + sample + '\n\nJSON requerido (sé conciso, máximo 3 items por array):\n{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"S/XX-XX","nivel_satisfaccion":"Alto/Medio/Bajo"},"objeciones":[{"texto":"objeción breve","frecuencia":"Alta","respuesta_sugerida":"respuesta breve"}],"perfiles_clientes":[{"nombre":"Perfil","icono":"🍕","descripcion":"desc breve","porcentaje":40,"tipo":"top"}],"productos_mencionados":[{"producto":"Pizza","menciones":10,"contexto":"pedido"}],"horarios_pico":[{"franja":"Noche","horas":"19:00-22:00","porcentaje":50,"color":"orange"}],"sentimiento":{"positivo":60,"neutral":25,"negativo":15,"resumen":"Resumen breve en una línea."},"frases_objecion":["frase 1","frase 2"],"frases_positivas":["frase 1","frase 2"],"recomendaciones":[{"titulo":"Título","descripcion":"Acción concreta breve","prioridad":"urgente","icono":"🎯"}]}';
 
   try {
     setP(40, 'Enviando a Gemini...');
@@ -356,7 +356,7 @@ async function doAnalyze() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 8000 }
+        generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
       })
     });
 
