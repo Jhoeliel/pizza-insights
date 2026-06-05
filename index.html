@@ -312,6 +312,30 @@ function parseAll() {
   return msgs;
 }
 
+// GEMINI CALL
+async function gemini(key, prompt) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key;
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 3000 }
+    })
+  });
+  if (!res.ok) {
+    var ed = await res.json();
+    throw new Error((ed.error && ed.error.message) || 'Error ' + res.status);
+  }
+  var data = await res.json();
+  var raw = data.candidates[0].content.parts[0].text;
+  var clean = raw.replace(/```json/g,'').replace(/```/g,'').trim();
+  var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
+  if (s === -1 || e === -1) throw new Error('JSON no encontrado en respuesta');
+  clean = clean.substring(s, e+1).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
+  return JSON.parse(clean);
+}
+
 // ANALYZE
 async function doAnalyze() {
   var key = localStorage.getItem('gemini_key') || '';
@@ -325,7 +349,7 @@ async function doAnalyze() {
   var msgs = parseAll();
 
   if (msgs.length < 3) {
-    alert('No se detectaron mensajes en formato WhatsApp. Verifica que los archivos son exportaciones .txt de WhatsApp.');
+    alert('No se detectaron mensajes en formato WhatsApp.');
     document.getElementById('btnOk').disabled = false;
     document.getElementById('progWrap').style.display = 'none';
     return;
@@ -335,56 +359,75 @@ async function doAnalyze() {
   var hc = {};
   msgs.forEach(function(m) {
     chats[m.chat] = 1;
-    hc[m.hour] = (hc[m.hour] || 0) + 1;
+    hc[m.hour] = (hc[m.hour]||0) + 1;
   });
   var nChats = Object.keys(chats).length;
   var peak = Object.entries(hc).sort(function(a,b){ return b[1]-a[1]; })[0];
 
-  setP(20, 'Preparando muestra (' + msgs.length + ' mensajes, ' + nChats + ' chats)...');
+  // Muestra completa dividida en 3 bloques para máxima representatividad
+  var total = msgs.length;
+  var block = Math.floor(total / 3);
+  var s1 = msgs.slice(0, block).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.msg; }).join('\n');
+  var s2 = msgs.slice(block, block*2).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.msg; }).join('\n');
+  var s3 = msgs.slice(block*2).map(function(m){ return '['+m.time+'] '+m.sender+': '+m.msg; }).join('\n');
 
-  var sample = msgs.slice(0, 100).map(function(m) {
-    return '[' + m.time + '] ' + m.sender + ': ' + m.msg;
-  }).join('\n');
-
-  var prompt = 'Analiza estas conversaciones WhatsApp de una pizzería delivery en Perú. Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.\n\nMensajes: ' + msgs.length + ' | Clientes: ' + nChats + ' | Hora pico: ' + (peak ? peak[0]+':00' : 'N/A') + '\n\nCONVERSACIONES:\n' + sample + '\n\nJSON requerido (sé conciso, máximo 3 items por array):\n{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"S/XX-XX","nivel_satisfaccion":"Alto/Medio/Bajo"},"objeciones":[{"texto":"objeción breve","frecuencia":"Alta","respuesta_sugerida":"respuesta breve"}],"perfiles_clientes":[{"nombre":"Perfil","icono":"🍕","descripcion":"desc breve","porcentaje":40,"tipo":"top"}],"productos_mencionados":[{"producto":"Pizza","menciones":10,"contexto":"pedido"}],"horarios_pico":[{"franja":"Noche","horas":"19:00-22:00","porcentaje":50,"color":"orange"}],"sentimiento":{"positivo":60,"neutral":25,"negativo":15,"resumen":"Resumen breve en una línea."},"frases_objecion":["frase 1","frase 2"],"frases_positivas":["frase 1","frase 2"],"recomendaciones":[{"titulo":"Título","descripcion":"Acción concreta breve","prioridad":"urgente","icono":"🎯"}]}';
+  var ctx = 'Pizzería delivery La Vera Pizza, Chimbote Perú. Total mensajes: '+total+', Clientes: '+nChats+', Hora pico: '+(peak?peak[0]+':00':'N/A')+'.';
 
   try {
-    setP(40, 'Enviando a Gemini...');
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key;
-    var res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
-      })
-    });
+    // ── LLAMADA 1: Objeciones + Perfiles ──
+    setP(10, 'Analizando objeciones y perfiles de clientes (1/4)...');
+    var p1 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 +
+      '\n\nResponde SOLO JSON sin markdown:\n' +
+      '{"objeciones":[{"texto":"objeción detectada","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta efectiva para esta objeción"}],' +
+      '"perfiles_clientes":[{"nombre":"nombre perfil","icono":"emoji","descripcion":"descripción del perfil","porcentaje":30,"tipo":"top/medium/low"}]}';
+    var r1 = await gemini(key, p1);
 
-    setP(75, 'Procesando respuesta...');
+    // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
+    setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
+    var p2 = ctx + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
+      '\n\nResponde SOLO JSON sin markdown:\n' +
+      '{"productos_mencionados":[{"producto":"nombre producto","menciones":5,"contexto":"pedido/consulta/queja"}],' +
+      '"horarios_pico":[{"franja":"nombre franja","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
+      '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"resumen de 2 líneas del sentimiento general"}}';
+    var r2 = await gemini(key, p2);
 
-    if (!res.ok) {
-      var ed = await res.json();
-      throw new Error((ed.error && ed.error.message) || 'Error ' + res.status);
-    }
+    // ── LLAMADA 3: Frases + Stats ──
+    setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
+    var p3 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
+      '\n\nResponde SOLO JSON sin markdown:\n' +
+      '{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"descripción precio percibido","nivel_satisfaccion":"Alto/Medio/Bajo — razón breve"},' +
+      '"frases_objecion":["frase real de objeción 1","frase 2","frase 3","frase 4","frase 5"],' +
+      '"frases_positivas":["frase positiva 1","frase 2","frase 3","frase 4","frase 5"]}';
+    var r3 = await gemini(key, p3);
 
-    var data = await res.json();
-    var raw = data.candidates[0].content.parts[0].text;
-    var clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-    var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-    if (s === -1 || e === -1) throw new Error('No se encontró JSON en la respuesta de Gemini');
-    clean = clean.substring(s, e + 1);
-    clean = clean.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-    var r;
-    try { r = JSON.parse(clean); }
-    catch(pe) {
-      console.error('JSON error:', pe, clean.substring(0,300));
-      throw new Error('Error al interpretar respuesta. Intenta de nuevo.');
-    }
+    // ── LLAMADA 4: Recomendaciones (basadas en todo lo anterior) ──
+    setP(80, 'Generando recomendaciones accionables (4/4)...');
+    var resumen = 'Objeciones: ' + (r1.objeciones||[]).map(function(o){ return o.texto; }).join(', ') +
+      '. Sentimiento: positivo '+((r2.sentimiento||{}).positivo||0)+'%, negativo '+((r2.sentimiento||{}).negativo||0)+'%.' +
+      ' Satisfacción: '+((r3.stats||{}).nivel_satisfaccion||'') +
+      '. Productos top: ' + (r2.productos_mencionados||[]).slice(0,3).map(function(p){ return p.producto; }).join(', ');
+    var p4 = ctx + '\n\nRESUMEN DEL ANÁLISIS:\n' + resumen +
+      '\n\nBasándote en este análisis, genera recomendaciones accionables específicas para mejorar las ventas y atención. Responde SOLO JSON sin markdown:\n' +
+      '{"recomendaciones":[{"titulo":"título corto","descripcion":"acción concreta y específica","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
+    var r4 = await gemini(key, p4);
 
-    setP(95, 'Generando dashboard...');
+    // ── COMBINAR RESULTADOS ──
+    setP(93, 'Construyendo dashboard...');
+    var result = {
+      stats: r3.stats || {},
+      objeciones: r1.objeciones || [],
+      perfiles_clientes: r1.perfiles_clientes || [],
+      productos_mencionados: r2.productos_mencionados || [],
+      horarios_pico: r2.horarios_pico || [],
+      sentimiento: r2.sentimiento || {},
+      frases_objecion: r3.frases_objecion || [],
+      frases_positivas: r3.frases_positivas || [],
+      recomendaciones: r4.recomendaciones || []
+    };
+
     await new Promise(function(x){ setTimeout(x, 200); });
-    render(r, msgs.length, nChats, peak);
-    setP(100, '¡Listo!');
+    render(result, total, nChats, peak);
+    setP(100, '¡Análisis completado!');
     setTimeout(function() {
       document.getElementById('progWrap').style.display = 'none';
       document.getElementById('results').style.display = 'block';
@@ -396,6 +439,7 @@ async function doAnalyze() {
     var msg = err.message || 'Error desconocido';
     if (msg.indexOf('API_KEY_INVALID') !== -1 || msg.indexOf('400') !== -1) msg = 'API Key inválida. Verifica en aistudio.google.com/apikey';
     if (msg.indexOf('403') !== -1) msg = 'Sin permisos. Crea una nueva key en aistudio.google.com/apikey';
+    if (msg.indexOf('quota') !== -1 || msg.indexOf('429') !== -1) msg = 'Límite de cuota alcanzado. Espera un momento y vuelve a intentarlo.';
     alert('Error: ' + msg);
     document.getElementById('btnOk').disabled = false;
     document.getElementById('progWrap').style.display = 'none';
