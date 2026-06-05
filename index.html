@@ -129,6 +129,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--fondo);color:var(--texto)
 .qi.pos{border-left-color:var(--verde);background:var(--verde-light);color:#1A7A42;}
 
 footer{text-align:center;color:var(--muted);font-size:11px;margin-top:28px;padding-top:16px;border-top:1px solid var(--borde);}
+
+@media print {
+  .header, .key-box, .instr, .upload-area, #chips, .btn-main, .prog-wrap, footer { display: none !important; }
+  .results { display: block !important; }
+  body { background: white; font-size: 12px; }
+  .agrid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ac { break-inside: avoid; border: 1px solid #ddd; }
+  .ac.full { grid-column: 1/-1; }
+  .sgrid { grid-template-columns: repeat(6, 1fr); }
+  .btn-pdf { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -182,6 +193,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:28px;paddi
   </div>
 
   <div class="results" id="results">
+  <div id="pdfBar" style="display:none; justify-content:flex-end; margin-bottom:14px;">
+    <button onclick="savePDF()" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--rojo);color:white;border:none;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">
+      📄 Guardar como PDF
+    </button>
+  </div>
+
     <div class="sec">📊 Resumen general</div>
     <div class="sgrid" id="sgrid"></div>
     <div class="sec">🔍 Análisis detallado</div>
@@ -363,6 +380,7 @@ async function doAnalyze() {
     setTimeout(function() {
       document.getElementById('progWrap').style.display = 'none';
       document.getElementById('results').style.display = 'block';
+      document.getElementById('pdfBar').style.display = 'flex';
       document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
     }, 400);
 
@@ -457,6 +475,10 @@ function render(r, total, nChats, peak) {
 
 function sc(l, v, c) {
   return '<div class="sc"><div class="sl">' + l + '</div><div class="sv ' + c + '">' + v + '</div></div>';
+}
+
+function savePDF() {
+  window.print();
 }
 </script>
 </body>
