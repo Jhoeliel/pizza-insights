@@ -344,10 +344,17 @@ async function doAnalyze() {
 
     var data = await res.json();
     var raw = data.candidates[0].content.parts[0].text;
-    var clean = raw.replace(/```json|```/g, '').trim();
+    var clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
     var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-    if (s !== -1 && e !== -1) clean = clean.substring(s, e + 1);
-    var r = JSON.parse(clean);
+    if (s === -1 || e === -1) throw new Error('No se encontró JSON en la respuesta de Gemini');
+    clean = clean.substring(s, e + 1);
+    clean = clean.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    var r;
+    try { r = JSON.parse(clean); }
+    catch(pe) {
+      console.error('JSON raw:', clean.substring(0,500));
+      throw new Error('Error al interpretar respuesta. Intenta de nuevo.');
+    }
 
     setP(95, 'Generando dashboard...');
     await new Promise(function(x){ setTimeout(x, 200); });
