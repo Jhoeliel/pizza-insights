@@ -370,17 +370,22 @@ async function doAnalyze() {
   var nChats = Object.keys(chats).length;
   var peak = Object.entries(hc).sort(function(a,b){ return b[1]-a[1]; })[0];
 
-  // Muestra completa dividida en 3 bloques para máxima representatividad
+  // Muestra representativa: 45 mensajes por bloque distribuidos uniformemente
   var total = msgs.length;
-  var block = Math.floor(total / 3);
   function cleanMsg(m) {
-    // Remove chars that break JSON parsing
-    var txt = m.msg.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\\/g, '').substring(0, 200);
-    return '['+m.time+'] '+m.sender.substring(0,20)+': '+txt;
+    var txt = m.msg.replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\\/g, '').substring(0, 120);
+    return '['+m.time+'] '+m.sender.substring(0,15)+': '+txt;
   }
-  var s1 = msgs.slice(0, block).map(cleanMsg).join('\n');
-  var s2 = msgs.slice(block, block*2).map(cleanMsg).join('\n');
-  var s3 = msgs.slice(block*2).map(cleanMsg).join('\n');
+  // Tomar muestras distribuidas uniformemente a lo largo de todos los mensajes
+  function sampleMsgs(arr, n) {
+    if (arr.length <= n) return arr.map(cleanMsg);
+    var result = [], step = arr.length / n;
+    for (var i = 0; i < n; i++) result.push(cleanMsg(arr[Math.floor(i * step)]));
+    return result;
+  }
+  var s1 = sampleMsgs(msgs.slice(0, Math.floor(total/3)), 45).join('\n');
+  var s2 = sampleMsgs(msgs.slice(Math.floor(total/3), Math.floor(total*2/3)), 45).join('\n');
+  var s3 = sampleMsgs(msgs.slice(Math.floor(total*2/3)), 45).join('\n');
 
   var ctx = 'Pizzería delivery La Vera Pizza, Chimbote Perú. Total mensajes: '+total+', Clientes: '+nChats+', Hora pico: '+(peak?peak[0]+':00':'N/A')+'.';
 
@@ -392,6 +397,7 @@ async function doAnalyze() {
       '{"objeciones":[{"texto":"objeción en max 8 palabras","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta en max 12 palabras"}],' +
       '"perfiles_clientes":[{"nombre":"2-3 palabras","icono":"emoji","descripcion":"max 10 palabras","porcentaje":30,"tipo":"top/medium/low"}]}';
     var r1 = await claude(key, p1, 'llamada-1-objeciones');
+    await new Promise(function(x){ setTimeout(x, 5000); }); // pausa anti-ratelimit
 
     // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
     setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
@@ -401,6 +407,7 @@ async function doAnalyze() {
       '"horarios_pico":[{"franja":"nombre","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
       '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"max 20 palabras"}}';
     var r2 = await claude(key, p2, 'llamada-2-productos');
+    await new Promise(function(x){ setTimeout(x, 5000); }); // pausa anti-ratelimit
 
     // ── LLAMADA 3: Frases + Stats ──
     setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
@@ -410,6 +417,7 @@ async function doAnalyze() {
       '"frases_objecion":["frase corta 1","frase 2","frase 3","frase 4","frase 5"],' +
       '"frases_positivas":["frase corta 1","frase 2","frase 3","frase 4","frase 5"]}';
     var r3 = await claude(key, p3, 'llamada-3-stats');
+    await new Promise(function(x){ setTimeout(x, 5000); }); // pausa anti-ratelimit
 
     // ── LLAMADA 4: Recomendaciones (basadas en todo lo anterior) ──
     setP(80, 'Generando recomendaciones accionables (4/4)...');
