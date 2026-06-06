@@ -82,7 +82,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--fondo);color:var(--texto)
 .sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin-bottom:22px;}
 .sc{background:var(--blanco);border:1px solid var(--borde);border-radius:11px;padding:13px 15px;}
 .sl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:5px;font-weight:500;}
-.sv{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;line-height:1;}
+.sv{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;line-height:1.2;word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.sv.sm{font-size:13px;font-weight:600;line-height:1.4;}
 .sv.r{color:var(--rojo);} .sv.o{color:var(--naranja);} .sv.g{color:var(--verde);}
 
 .agrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -544,7 +545,9 @@ function render(r, total, nChats, peak) {
 }
 
 function sc(l, v, c) {
-  return '<div class="sc"><div class="sl">' + l + '</div><div class="sv ' + c + '">' + v + '</div></div>';
+  // Use smaller font for longer text values
+  var cls = c + (String(v).length > 12 ? ' sm' : '');
+  return '<div class="sc"><div class="sl">' + l + '</div><div class="sv ' + cls + '">' + v + '</div></div>';
 }
 
 function savePDF() {
