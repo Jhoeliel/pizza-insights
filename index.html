@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PizzaInsights — Gemini</title>
+<title>La Vera Pizza Insights</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap');
 :root {
@@ -29,7 +29,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--fondo);color:var(--texto)
 /* KEY */
 .key-box{background:var(--negro-soft);border:1px solid #333;border-left:4px solid var(--acento);border-radius:12px;padding:18px 22px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
 .key-left{flex:1;min-width:180px;}
-.key-title{color:var(--acento);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px;}
+.key-title{color:#D97757;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px;}
 .key-desc{color:rgba(255,255,255,0.55);font-size:12px;line-height:1.5;}
 .key-desc a{color:var(--acento);}
 .key-right{flex:2;min-width:260px;}
@@ -160,12 +160,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:28px;paddi
 
   <div class="key-box">
     <div class="key-left">
-      <div class="key-title">🔑 API Key de Google Gemini — GRATIS</div>
-      <div class="key-desc">1. Ve a <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a><br>2. Clic en <strong style="color:white">"Create API key"</strong> → copia la key<br>3. Pégala aquí. Sin tarjeta, sin costo.</div>
+      <div class="key-title">🔑 API Key de Anthropic (Claude)</div>
+      <div class="key-desc">1. Ve a <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com/settings/keys</a><br>2. Clic en <strong style="color:white">"Create key"</strong> → copia la key<br>3. Pégala aquí. Empieza con sk-ant-...</div>
     </div>
     <div class="key-right">
       <div class="key-row">
-        <input type="password" id="keyInput" class="key-input" placeholder="AIzaSy... o AQ.Ab8..." autocomplete="off">
+        <input type="password" id="keyInput" class="key-input" placeholder="sk-ant-api03-..." autocomplete="off">
         <button class="key-btn" onclick="saveKey()">Guardar</button>
       </div>
       <div id="keyStatus" class="key-status"></div>
@@ -221,14 +221,14 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:28px;paddi
     </div>
   </div>
 
-  <footer>PizzaInsights · Powered by Google Gemini · Tu key se guarda solo en este navegador</footer>
+  <footer>La Vera Pizza Insights · Powered by Claude AI (Anthropic) · Tu key se guarda solo en este navegador</footer>
 </div>
 
 <script>
 var files = [];
 
 // KEY
-var savedKey = localStorage.getItem('gemini_key') || '';
+var savedKey = localStorage.getItem('claude_key') || '';
 if (savedKey) {
   document.getElementById('keyInput').value = savedKey;
   document.getElementById('keyStatus').innerHTML = '<span style="color:#34A853">✅ Key guardada</span>';
@@ -236,17 +236,17 @@ if (savedKey) {
 
 function saveKey() {
   var k = document.getElementById('keyInput').value.trim();
-  if (k.length < 8) {
-    document.getElementById('keyStatus').innerHTML = '<span style="color:#EA4335">❌ Key muy corta</span>';
+  if (!k.startsWith('sk-ant-')) {
+    document.getElementById('keyStatus').innerHTML = '<span style="color:#EA4335">❌ La key debe empezar con sk-ant-</span>';
     return;
   }
-  localStorage.setItem('gemini_key', k);
+  localStorage.setItem('claude_key', k);
   document.getElementById('keyStatus').innerHTML = '<span style="color:#34A853">✅ Key guardada</span>';
   updateBtn();
 }
 
 function updateBtn() {
-  var k = localStorage.getItem('gemini_key') || '';
+  var k = localStorage.getItem('claude_key') || '';
   document.getElementById('btnOk').disabled = files.length === 0 || k.length < 8;
 }
 
@@ -313,27 +313,29 @@ function parseAll() {
 }
 
 // GEMINI CALL
-async function gemini(key, prompt, label) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key;
-  var res = await fetch(url, {
+async function claude(key, prompt, label) {
+  var res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
     })
   });
   if (!res.ok) {
     var ed = await res.json();
-    throw new Error((ed.error && ed.error.message) || 'Error ' + res.status);
+    var msg = (ed.error && ed.error.message) || 'Error ' + res.status;
+    if (res.status === 401) msg = 'API Key inválida o sin créditos. Verifica en console.anthropic.com';
+    throw new Error(msg);
   }
   var data = await res.json();
-  // Check for blocked response
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-    var reason = (data.candidates && data.candidates[0] && data.candidates[0].finishReason) || 'desconocido';
-    throw new Error('Gemini bloqueó la respuesta (' + (label||'') + '). Razón: ' + reason);
-  }
-  var raw = data.candidates[0].content.parts[0].text;
+  var raw = data.content.map(function(b){ return b.text || ''; }).join('');
   var clean = raw.replace(/```json/g,'').replace(/```/g,'').trim();
   var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
   if (s === -1 || e === -1) throw new Error('JSON no encontrado en llamada ' + (label||''));
@@ -344,7 +346,7 @@ async function gemini(key, prompt, label) {
 
 // ANALYZE
 async function doAnalyze() {
-  var key = localStorage.getItem('gemini_key') || '';
+  var key = localStorage.getItem('claude_key') || '';
   if (!key || files.length === 0) return;
 
   document.getElementById('btnOk').disabled = true;
@@ -391,7 +393,7 @@ async function doAnalyze() {
       '\n\nResponde SOLO JSON sin markdown. Sé MUY conciso (máximo 15 palabras por campo de texto):\n' +
       '{"objeciones":[{"texto":"objeción en max 8 palabras","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta en max 12 palabras"}],' +
       '"perfiles_clientes":[{"nombre":"2-3 palabras","icono":"emoji","descripcion":"max 10 palabras","porcentaje":30,"tipo":"top/medium/low"}]}';
-    var r1 = await gemini(key, p1, 'llamada-1-objeciones');
+    var r1 = await claude(key, p1, 'llamada-1-objeciones');
 
     // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
     setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
@@ -400,7 +402,7 @@ async function doAnalyze() {
       '{"productos_mencionados":[{"producto":"nombre","menciones":5,"contexto":"pedido/consulta/queja"}],' +
       '"horarios_pico":[{"franja":"nombre","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
       '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"max 20 palabras"}}';
-    var r2 = await gemini(key, p2, 'llamada-2-productos');
+    var r2 = await claude(key, p2, 'llamada-2-productos');
 
     // ── LLAMADA 3: Frases + Stats ──
     setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
@@ -409,7 +411,7 @@ async function doAnalyze() {
       '{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"max 8 palabras","nivel_satisfaccion":"Alto/Medio/Bajo"},' +
       '"frases_objecion":["frase corta 1","frase 2","frase 3","frase 4","frase 5"],' +
       '"frases_positivas":["frase corta 1","frase 2","frase 3","frase 4","frase 5"]}';
-    var r3 = await gemini(key, p3, 'llamada-3-stats');
+    var r3 = await claude(key, p3, 'llamada-3-stats');
 
     // ── LLAMADA 4: Recomendaciones (basadas en todo lo anterior) ──
     setP(80, 'Generando recomendaciones accionables (4/4)...');
@@ -420,7 +422,7 @@ async function doAnalyze() {
     var p4 = ctx + '\n\nRESUMEN DEL ANÁLISIS:\n' + resumen +
       '\n\nGenera recomendaciones accionables. Responde SOLO JSON sin markdown. Max 15 palabras por descripcion:\n' +
       '{"recomendaciones":[{"titulo":"max 5 palabras","descripcion":"acción concreta max 15 palabras","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
-    var r4 = await gemini(key, p4, 'llamada-4-recomendaciones');
+    var r4 = await claude(key, p4, 'llamada-4-recomendaciones');
 
     // ── COMBINAR RESULTADOS ──
     setP(93, 'Construyendo dashboard...');
@@ -448,8 +450,7 @@ async function doAnalyze() {
 
   } catch(err) {
     var msg = err.message || 'Error desconocido';
-    if (msg.indexOf('API_KEY_INVALID') !== -1 || msg.indexOf('400') !== -1) msg = 'API Key inválida. Verifica en aistudio.google.com/apikey';
-    if (msg.indexOf('403') !== -1) msg = 'Sin permisos. Crea una nueva key en aistudio.google.com/apikey';
+    if (msg.indexOf('401') !== -1) msg = 'API Key inválida o sin créditos. Verifica en console.anthropic.com';
     if (msg.indexOf('quota') !== -1 || msg.indexOf('429') !== -1) msg = 'Límite de cuota alcanzado. Espera un momento y vuelve a intentarlo.';
     alert('Error: ' + msg);
     document.getElementById('btnOk').disabled = false;
