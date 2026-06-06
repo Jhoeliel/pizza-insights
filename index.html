@@ -223,25 +223,21 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px;paddi
     </div>
 
     <div class="agrid">
-      <!-- Ventas y conversión -->
       <div class="ac"><div class="ct"><div class="dot dg"></div>Análisis de ventas y conversión</div><div id="r-ventas"></div></div>
-      <!-- Objeciones que impidieron cierres -->
       <div class="ac"><div class="ct"><div class="dot dr"></div>Objeciones que impidieron cierres</div><div id="r-obj-cierres"></div></div>
-      <!-- Pizzas más pedidas -->
       <div class="ac"><div class="ct"><div class="dot do"></div>Pizzas más pedidas (sin combo)</div><div id="r-pizzas"></div></div>
-      <!-- Tamaños frecuentes -->
+      <div class="ac"><div class="ct"><div class="dot dg"></div>Combos más pedidos</div><div id="r-combos"></div></div>
       <div class="ac"><div class="ct"><div class="dot db"></div>Tamaños más frecuentes</div><div id="r-tam"></div></div>
-      <!-- Perfiles -->
+      <div class="ac"><div class="ct"><div class="dot do"></div>Métodos de pago preferidos</div><div id="r-pago"></div></div>
+      <div class="ac"><div class="ct"><div class="dot dg"></div>Clientes recurrentes vs nuevos</div><div id="r-recurrencia"></div></div>
+      <div class="ac"><div class="ct"><div class="dot db"></div>Zonas geográficas activas</div><div id="r-zonas"></div></div>
       <div class="ac"><div class="ct"><div class="dot do"></div>Perfiles de clientes</div><div id="r-perf"></div></div>
-      <!-- Horarios -->
       <div class="ac"><div class="ct"><div class="dot dy"></div>Horarios pico</div><div id="r-hor"></div></div>
-      <!-- Sentimiento -->
+      <div class="ac"><div class="ct"><div class="dot dr"></div>Competencia mencionada</div><div id="r-competencia"></div></div>
+      <div class="ac"><div class="ct"><div class="dot db"></div>¿Cómo nos encontraron?</div><div id="r-organico"></div></div>
       <div class="ac full"><div class="ct"><div class="dot db"></div>Sentimiento general</div><div id="r-sent"></div></div>
-      <!-- Objeciones generales -->
       <div class="ac full"><div class="ct"><div class="dot dr"></div>Todas las objeciones frecuentes</div><div id="r-obj"></div></div>
-      <!-- Frases -->
       <div class="ac full"><div class="ct"><div class="dot dr"></div>Frases textuales</div><div id="r-fras"></div></div>
-      <!-- Recomendaciones -->
       <div class="ac full"><div class="ct"><div class="dot do"></div>Recomendaciones accionables</div><div id="r-rec"></div></div>
     </div>
   </div>
@@ -418,8 +414,11 @@ async function doAnalyze() {
     // ── LLAMADA 1: Objeciones + Perfiles ──
     setP(10, 'Analizando objeciones y perfiles de clientes (1/4)...');
     var p1 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 +
-      '\n\nAnaliza cada conversación e identifica si terminó en VENTA CERRADA, NO CERRADA (preguntó pero no compró) o CURIOSO (solo preguntó info sin intención clara de compra). Responde SOLO JSON sin markdown:\n' +
-      '{"ventas":{"cerradas":15,"no_cerradas":30,"curiosos":26,"total_conversaciones":71,"tasa_conversion":"XX%","ticket_promedio":"S/XX"},' +
+      '\n\nAnaliza cada conversación. Identifica: ventas cerradas/no cerradas/curiosos, abandono tras precio, zonas geográficas mencionadas, clientes recurrentes (mismo número o nombre). Responde SOLO JSON sin markdown:\n' +
+      '{"ventas":{"cerradas":15,"no_cerradas":30,"curiosos":26,"total_conversaciones":71,"tasa_conversion":"XX%","ticket_promedio":"S/XX",' +
+      '"abandono_post_precio":8,"abandono_post_precio_pct":"XX%"},' +
+      '"zonas":[{"zona":"nombre barrio/sector","menciones":5,"porcentaje":20}],' +
+      '"recurrencia":{"clientes_recurrentes":10,"clientes_nuevos":61,"pct_recurrentes":"XX%","pct_nuevos":"XX%"},' +
       '"objeciones_cierre":[{"texto":"objeción que impidió la venta","frecuencia":"Alta/Media/Baja","impacto":"Alto/Medio/Bajo"}],' +
       '"perfiles_clientes":[{"nombre":"nombre perfil","icono":"emoji","descripcion":"descripción breve","porcentaje":30,"tipo":"top/medium/low"}]}';
     var r1 = await claude(key, p1, 'llamada-1-objeciones');
@@ -428,9 +427,12 @@ async function doAnalyze() {
     // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
     setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
     var p2 = ctx + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
-      '\n\nIdentifica pizzas individuales (NO combos), tamaños pedidos y horarios. Responde SOLO JSON sin markdown:\n' +
+      '\n\nIdentifica pizzas individuales (NO combos), combos pedidos, tamaños, horarios, métodos de pago mencionados (Yape/efectivo/transferencia), y menciones de competencia. Responde SOLO JSON sin markdown:\n' +
       '{"pizzas_individuales":[{"nombre":"nombre pizza","pedidos":5,"porcentaje":30}],' +
+      '"combos":[{"nombre":"nombre combo","pedidos":5,"porcentaje":30}],' +
       '"tamanos":[{"tamano":"Personal/Mediana/Familiar/Grande","pedidos":10,"porcentaje":40}],' +
+      '"metodos_pago":[{"metodo":"Yape/Efectivo/Transferencia/Otro","menciones":10,"porcentaje":50}],' +
+      '"competencia":[{"nombre":"nombre pizzería competidora","menciones":3,"contexto":"comparacion de precio/calidad/delivery"}],' +
       '"horarios_pico":[{"franja":"nombre","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
       '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"resumen breve"}}';
     var r2 = await claude(key, p2, 'llamada-2-productos');
@@ -439,8 +441,11 @@ async function doAnalyze() {
     // ── LLAMADA 3: Frases + Stats ──
     setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
     var p3 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
-      '\n\nExtrae frases textuales reales de los chats y estadísticas. Responde SOLO JSON sin markdown:\n' +
-      '{"stats":{"nivel_satisfaccion":"Alto/Medio/Bajo","tiempo_respuesta_percibido":"Rápido/Normal/Lento","canal_contacto_principal":"WhatsApp/Llamada/Mixto"},' +
+      '\n\nExtrae frases textuales, estadísticas, fuente de recomendación orgánica (menciones de "me recomendaron", "vi en TikTok/Instagram/Facebook", "mi amigo pidió") y velocidad de respuesta percibida. Responde SOLO JSON sin markdown:\n' +
+      '{"stats":{"nivel_satisfaccion":"Alto/Medio/Bajo","tiempo_respuesta_percibido":"Rápido/Normal/Lento","canal_contacto_principal":"WhatsApp/Llamada/Mixto",' +
+      '"tiempo_promedio_cierre":"X mensajes / X minutos estimado"},' +
+      '"recomendacion_organica":[{"canal":"TikTok/Instagram/Facebook/Referido/Google/Otro","menciones":5,"porcentaje":30}],' +
+      '"sin_respuesta_negocio":3,' +
       '"frases_objecion":["frase real del chat 1","frase 2","frase 3","frase 4","frase 5"],' +
       '"frases_positivas":["frase real positiva 1","frase 2","frase 3","frase 4","frase 5"],' +
       '"objeciones":[{"texto":"objeción frecuente","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta breve"}]}';
@@ -464,13 +469,20 @@ async function doAnalyze() {
     var result = {
       stats: r3.stats || {},
       ventas: r1.ventas || {},
+      zonas: r1.zonas || [],
+      recurrencia: r1.recurrencia || {},
       objeciones_cierre: r1.objeciones_cierre || [],
       objeciones: r3.objeciones || [],
       perfiles_clientes: r1.perfiles_clientes || [],
       pizzas_individuales: r2.pizzas_individuales || [],
+      combos: r2.combos || [],
       tamanos: r2.tamanos || [],
+      metodos_pago: r2.metodos_pago || [],
+      competencia: r2.competencia || [],
       horarios_pico: r2.horarios_pico || [],
       sentimiento: r2.sentimiento || {},
+      recomendacion_organica: r3.recomendacion_organica || [],
+      sin_respuesta_negocio: r3.sin_respuesta_negocio || 0,
       frases_objecion: r3.frases_objecion || [],
       frases_positivas: r3.frases_positivas || [],
       recomendaciones: r4.recomendaciones || [],
@@ -512,6 +524,7 @@ function render(r, total, nChats, peak) {
   var curiosos = v.curiosos || 0;
 
   // Stats grid
+  var abandonoPrecio = v.abandono_post_precio || 0;
   document.getElementById('sgrid').innerHTML =
     sc('Total mensajes', total, '') +
     sc('Conversaciones', nChats, 'r') +
@@ -520,8 +533,11 @@ function render(r, total, nChats, peak) {
     sc('Curiosos', curiosos, '') +
     sc('Conversión', v.tasa_conversion || '—', 'g') +
     sc('Ticket prom.', v.ticket_promedio || '—', 'o') +
+    sc('Abandono x precio', abandonoPrecio, 'r') +
+    sc('Sin respuesta', r.sin_respuesta_negocio || 0, 'o') +
     sc('Hora pico', peak ? peak[0]+':00' : '—', 'o') +
-    sc('Satisfacción', r.stats ? r.stats.nivel_satisfaccion || '—' : '—', 'g');
+    sc('Satisfacción', r.stats ? r.stats.nivel_satisfaccion || '—' : '—', 'g') +
+    sc('Tiempo cierre', r.stats ? r.stats.tiempo_promedio_cierre || '—' : '—', '');
 
   // ── PIE CHART ──
   var canvas = document.getElementById('pieChart');
@@ -606,6 +622,69 @@ function render(r, total, nChats, peak) {
     return '<div class="bar-i"><div class="bl">'+t.tamano+'<span>'+t.pedidos+' pedidos · '+t.porcentaje+'%</span></div>' +
       '<div class="bt"><div class="bf '+cols[i%cols.length]+'" style="width:'+Math.round(t.pedidos/maxT*100)+'%"></div></div></div>';
   }).join('') + '</div>';
+
+  // ── COMBOS ──
+  var combos = r.combos || [];
+  var maxC = combos.length ? Math.max.apply(null, combos.map(function(c){ return c.pedidos; })) : 1;
+  document.getElementById('r-combos').innerHTML = combos.length ? '<div class="bars">' + combos.slice(0,6).map(function(c,i){
+    return '<div class="bar-i"><div class="bl">'+c.nombre+'<span>'+c.pedidos+' pedidos · '+c.porcentaje+'%</span></div>' +
+      '<div class="bt"><div class="bf '+cols[i%cols.length]+'" style="width:'+Math.round(c.pedidos/maxC*100)+'%"></div></div></div>';
+  }).join('') + '</div>' : '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin datos de combos</p>';
+
+  // ── MÉTODOS DE PAGO ──
+  var pagos = r.metodos_pago || [];
+  var maxPg = pagos.length ? Math.max.apply(null, pagos.map(function(p){ return p.menciones; })) : 1;
+  var pagoIcons = {'Yape':'💜','Efectivo':'💵','Transferencia':'🏦','Otro':'💳'};
+  document.getElementById('r-pago').innerHTML = pagos.length ? '<div style="display:flex;flex-direction:column;gap:8px;">' + pagos.map(function(p){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F5F5F5;border-radius:9px;">' +
+      '<span style="font-size:18px;">'+(pagoIcons[p.metodo]||'💳')+'</span>' +
+      '<div style="flex:1"><div style="font-weight:600;font-size:13px;">'+p.metodo+'</div>' +
+      '<div style="background:var(--borde);border-radius:4px;height:5px;margin-top:4px;overflow:hidden;">' +
+      '<div style="height:100%;background:var(--acento);width:'+Math.round(p.menciones/maxPg*100)+'%;border-radius:4px;"></div></div></div>' +
+      '<span style="font-family:Syne,sans-serif;font-weight:700;font-size:14px;color:var(--acento);">'+p.porcentaje+'%</span></div>';
+  }).join('') + '</div>' : '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin menciones de pago detectadas</p>';
+
+  // ── RECURRENCIA ──
+  var rec = r.recurrencia || {};
+  var recNuevos = rec.clientes_nuevos || 0;
+  var recRecurrentes = rec.clientes_recurrentes || 0;
+  var recTotal = recNuevos + recRecurrentes || 1;
+  document.getElementById('r-recurrencia').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    ventaRow('🔁 Clientes recurrentes', recRecurrentes, recTotal, '#2C5F8A') +
+    ventaRow('🆕 Clientes nuevos', recNuevos, recTotal, '#D4500A') +
+    '<div style="margin-top:6px;padding:10px;background:#E8F0F8;border-radius:9px;font-size:13px;color:#2C5F8A;">' +
+    '💡 <strong>Fidelización:</strong> ' + (rec.pct_recurrentes||'—') + ' de tus clientes vuelven a pedir.' +
+    '</div></div>';
+
+  // ── ZONAS ──
+  var zonas = r.zonas || [];
+  var maxZ = zonas.length ? Math.max.apply(null, zonas.map(function(z){ return z.menciones; })) : 1;
+  document.getElementById('r-zonas').innerHTML = zonas.length ? '<div class="bars">' + zonas.slice(0,7).map(function(z,i){
+    return '<div class="bar-i"><div class="bl">📍 '+z.zona+'<span>'+z.menciones+' menciones · '+z.porcentaje+'%</span></div>' +
+      '<div class="bt"><div class="bf '+cols[i%cols.length]+'" style="width:'+Math.round(z.menciones/maxZ*100)+'%"></div></div></div>';
+  }).join('') + '</div>' : '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin zonas geográficas detectadas</p>';
+
+  // ── COMPETENCIA ──
+  var comp = r.competencia || [];
+  document.getElementById('r-competencia').innerHTML = comp.length ? comp.map(function(c){
+    return '<div style="margin-bottom:9px;padding:10px 12px;background:#FEF9E7;border-radius:8px;border-left:3px solid var(--amarillo);">' +
+      '<div style="font-weight:600;font-size:13px;color:#7D5A00;margin-bottom:3px;">🏪 '+c.nombre+'</div>' +
+      '<div style="font-size:12px;color:#555;">'+c.menciones+' menciones — '+c.contexto+'</div></div>';
+  }).join('') : '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">✅ Sin menciones de competencia detectadas</p>';
+
+  // ── CÓMO NOS ENCONTRARON (recomendación orgánica) ──
+  var org = r.recomendacion_organica || [];
+  var maxOrg = org.length ? Math.max.apply(null, org.map(function(o){ return o.menciones; })) : 1;
+  var orgIcons = {'TikTok':'🎵','Instagram':'📸','Facebook':'👥','Referido':'🤝','Google':'🔍','Otro':'📱'};
+  document.getElementById('r-organico').innerHTML = org.length ? '<div style="display:flex;flex-direction:column;gap:8px;">' + org.map(function(o){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F5F5F5;border-radius:9px;">' +
+      '<span style="font-size:18px;">'+(orgIcons[o.canal]||'📱')+'</span>' +
+      '<div style="flex:1"><div style="font-weight:600;font-size:13px;">'+o.canal+'</div>' +
+      '<div style="background:var(--borde);border-radius:4px;height:5px;margin-top:4px;overflow:hidden;">' +
+      '<div style="height:100%;background:var(--azul);width:'+Math.round(o.menciones/maxOrg*100)+'%;border-radius:4px;"></div></div></div>' +
+      '<span style="font-family:Syne,sans-serif;font-weight:700;font-size:14px;color:var(--azul);">'+o.porcentaje+'%</span></div>';
+  }).join('') + '</div>' : '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin menciones de canal de origen detectadas</p>';
 
   // ── PERFILES ──
   document.getElementById('r-perf').innerHTML = '<div class="perfs">' + (r.perfiles_clientes||[]).map(function(p){
