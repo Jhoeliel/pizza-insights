@@ -320,7 +320,7 @@ async function gemini(key, prompt, label) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 3000 }
+      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
     })
   });
   if (!res.ok) {
@@ -336,16 +336,10 @@ async function gemini(key, prompt, label) {
   var raw = data.candidates[0].content.parts[0].text;
   var clean = raw.replace(/```json/g,'').replace(/```/g,'').trim();
   var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-  if (s === -1 || e === -1) {
-    alert('DEBUG ' + (label||'') + ' (primeros 400 chars):\n' + raw.substring(0,400));
-    throw new Error('JSON no encontrado en respuesta ' + (label||''));
-  }
+  if (s === -1 || e === -1) throw new Error('JSON no encontrado en llamada ' + (label||''));
   clean = clean.substring(s, e+1).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
   try { return JSON.parse(clean); }
-  catch(pe) {
-    alert('DEBUG parse error ' + (label||'') + ':\n' + clean.substring(0,400));
-    throw new Error('Error parseando JSON de llamada ' + (label||''));
-  }
+  catch(pe) { throw new Error('Error parseando respuesta de llamada ' + (label||'')); }
 }
 
 // ANALYZE
@@ -394,27 +388,27 @@ async function doAnalyze() {
     // ── LLAMADA 1: Objeciones + Perfiles ──
     setP(10, 'Analizando objeciones y perfiles de clientes (1/4)...');
     var p1 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 +
-      '\n\nResponde SOLO JSON sin markdown:\n' +
-      '{"objeciones":[{"texto":"objeción detectada","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta efectiva para esta objeción"}],' +
-      '"perfiles_clientes":[{"nombre":"nombre perfil","icono":"emoji","descripcion":"descripción del perfil","porcentaje":30,"tipo":"top/medium/low"}]}';
+      '\n\nResponde SOLO JSON sin markdown. Sé MUY conciso (máximo 15 palabras por campo de texto):\n' +
+      '{"objeciones":[{"texto":"objeción en max 8 palabras","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta en max 12 palabras"}],' +
+      '"perfiles_clientes":[{"nombre":"2-3 palabras","icono":"emoji","descripcion":"max 10 palabras","porcentaje":30,"tipo":"top/medium/low"}]}';
     var r1 = await gemini(key, p1, 'llamada-1-objeciones');
 
     // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
     setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
     var p2 = ctx + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
-      '\n\nResponde SOLO JSON sin markdown:\n' +
-      '{"productos_mencionados":[{"producto":"nombre producto","menciones":5,"contexto":"pedido/consulta/queja"}],' +
-      '"horarios_pico":[{"franja":"nombre franja","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
-      '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"resumen de 2 líneas del sentimiento general"}}';
+      '\n\nResponde SOLO JSON sin markdown. Sé MUY conciso:\n' +
+      '{"productos_mencionados":[{"producto":"nombre","menciones":5,"contexto":"pedido/consulta/queja"}],' +
+      '"horarios_pico":[{"franja":"nombre","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
+      '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"max 20 palabras"}}';
     var r2 = await gemini(key, p2, 'llamada-2-productos');
 
     // ── LLAMADA 3: Frases + Stats ──
     setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
     var p3 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
-      '\n\nResponde SOLO JSON sin markdown:\n' +
-      '{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"descripción precio percibido","nivel_satisfaccion":"Alto/Medio/Bajo — razón breve"},' +
-      '"frases_objecion":["frase real de objeción 1","frase 2","frase 3","frase 4","frase 5"],' +
-      '"frases_positivas":["frase positiva 1","frase 2","frase 3","frase 4","frase 5"]}';
+      '\n\nResponde SOLO JSON sin markdown. Frases: copia textual corta de los chats (max 10 palabras cada una):\n' +
+      '{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"max 8 palabras","nivel_satisfaccion":"Alto/Medio/Bajo"},' +
+      '"frases_objecion":["frase corta 1","frase 2","frase 3","frase 4","frase 5"],' +
+      '"frases_positivas":["frase corta 1","frase 2","frase 3","frase 4","frase 5"]}';
     var r3 = await gemini(key, p3, 'llamada-3-stats');
 
     // ── LLAMADA 4: Recomendaciones (basadas en todo lo anterior) ──
@@ -424,8 +418,8 @@ async function doAnalyze() {
       ' Satisfacción: '+((r3.stats||{}).nivel_satisfaccion||'') +
       '. Productos top: ' + (r2.productos_mencionados||[]).slice(0,3).map(function(p){ return p.producto; }).join(', ');
     var p4 = ctx + '\n\nRESUMEN DEL ANÁLISIS:\n' + resumen +
-      '\n\nBasándote en este análisis, genera recomendaciones accionables específicas para mejorar las ventas y atención. Responde SOLO JSON sin markdown:\n' +
-      '{"recomendaciones":[{"titulo":"título corto","descripcion":"acción concreta y específica","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
+      '\n\nGenera recomendaciones accionables. Responde SOLO JSON sin markdown. Max 15 palabras por descripcion:\n' +
+      '{"recomendaciones":[{"titulo":"max 5 palabras","descripcion":"acción concreta max 15 palabras","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
     var r4 = await gemini(key, p4, 'llamada-4-recomendaciones');
 
     // ── COMBINAR RESULTADOS ──
