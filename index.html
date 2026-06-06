@@ -211,14 +211,38 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px;paddi
     <div class="sec">📊 Resumen general</div>
     <div class="sgrid" id="sgrid"></div>
     <div class="sec">🔍 Análisis detallado</div>
+    <!-- VENTAS PIE CHART -->
+    <div class="ac full" style="margin-bottom:14px;background:var(--blanco);border:1px solid var(--borde);border-radius:13px;padding:18px 20px;">
+      <div class="ct" style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:7px;">
+        <div class="dot dr"></div>Distribución de conversaciones
+      </div>
+      <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
+        <canvas id="pieChart" width="200" height="200" style="flex-shrink:0;"></canvas>
+        <div id="r-pie-legend" style="flex:1;min-width:200px;"></div>
+      </div>
+    </div>
+
     <div class="agrid">
-      <div class="ac"><div class="ct"><div class="dot dr"></div>Objeciones frecuentes</div><div id="r-obj"></div></div>
+      <!-- Ventas y conversión -->
+      <div class="ac"><div class="ct"><div class="dot dg"></div>Análisis de ventas y conversión</div><div id="r-ventas"></div></div>
+      <!-- Objeciones que impidieron cierres -->
+      <div class="ac"><div class="ct"><div class="dot dr"></div>Objeciones que impidieron cierres</div><div id="r-obj-cierres"></div></div>
+      <!-- Pizzas más pedidas -->
+      <div class="ac"><div class="ct"><div class="dot do"></div>Pizzas más pedidas (sin combo)</div><div id="r-pizzas"></div></div>
+      <!-- Tamaños frecuentes -->
+      <div class="ac"><div class="ct"><div class="dot db"></div>Tamaños más frecuentes</div><div id="r-tam"></div></div>
+      <!-- Perfiles -->
       <div class="ac"><div class="ct"><div class="dot do"></div>Perfiles de clientes</div><div id="r-perf"></div></div>
-      <div class="ac"><div class="ct"><div class="dot dg"></div>Productos consultados</div><div id="r-prod"></div></div>
+      <!-- Horarios -->
       <div class="ac"><div class="ct"><div class="dot dy"></div>Horarios pico</div><div id="r-hor"></div></div>
+      <!-- Sentimiento -->
       <div class="ac full"><div class="ct"><div class="dot db"></div>Sentimiento general</div><div id="r-sent"></div></div>
+      <!-- Objeciones generales -->
+      <div class="ac full"><div class="ct"><div class="dot dr"></div>Todas las objeciones frecuentes</div><div id="r-obj"></div></div>
+      <!-- Frases -->
       <div class="ac full"><div class="ct"><div class="dot dr"></div>Frases textuales</div><div id="r-fras"></div></div>
-      <div class="ac full"><div class="ct"><div class="dot do"></div>Recomendaciones</div><div id="r-rec"></div></div>
+      <!-- Recomendaciones -->
+      <div class="ac full"><div class="ct"><div class="dot do"></div>Recomendaciones accionables</div><div id="r-rec"></div></div>
     </div>
   </div>
 
@@ -394,29 +418,32 @@ async function doAnalyze() {
     // ── LLAMADA 1: Objeciones + Perfiles ──
     setP(10, 'Analizando objeciones y perfiles de clientes (1/4)...');
     var p1 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 +
-      '\n\nResponde SOLO JSON sin markdown. Sé MUY conciso (máximo 15 palabras por campo de texto):\n' +
-      '{"objeciones":[{"texto":"objeción en max 8 palabras","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta en max 12 palabras"}],' +
-      '"perfiles_clientes":[{"nombre":"2-3 palabras","icono":"emoji","descripcion":"max 10 palabras","porcentaje":30,"tipo":"top/medium/low"}]}';
+      '\n\nAnaliza cada conversación e identifica si terminó en VENTA CERRADA, NO CERRADA (preguntó pero no compró) o CURIOSO (solo preguntó info sin intención clara de compra). Responde SOLO JSON sin markdown:\n' +
+      '{"ventas":{"cerradas":15,"no_cerradas":30,"curiosos":26,"total_conversaciones":71,"tasa_conversion":"XX%","ticket_promedio":"S/XX"},' +
+      '"objeciones_cierre":[{"texto":"objeción que impidió la venta","frecuencia":"Alta/Media/Baja","impacto":"Alto/Medio/Bajo"}],' +
+      '"perfiles_clientes":[{"nombre":"nombre perfil","icono":"emoji","descripcion":"descripción breve","porcentaje":30,"tipo":"top/medium/low"}]}';
     var r1 = await claude(key, p1, 'llamada-1-objeciones');
     await new Promise(function(x){ setTimeout(x, 5000); }); // pausa anti-ratelimit
 
     // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
     setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
     var p2 = ctx + '\n\nCONVERSACIONES BLOQUE 2:\n' + s2 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
-      '\n\nResponde SOLO JSON sin markdown. Sé MUY conciso:\n' +
-      '{"productos_mencionados":[{"producto":"nombre","menciones":5,"contexto":"pedido/consulta/queja"}],' +
+      '\n\nIdentifica pizzas individuales (NO combos), tamaños pedidos y horarios. Responde SOLO JSON sin markdown:\n' +
+      '{"pizzas_individuales":[{"nombre":"nombre pizza","pedidos":5,"porcentaje":30}],' +
+      '"tamanos":[{"tamano":"Personal/Mediana/Familiar/Grande","pedidos":10,"porcentaje":40}],' +
       '"horarios_pico":[{"franja":"nombre","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
-      '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"max 20 palabras"}}';
+      '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"resumen breve"}}';
     var r2 = await claude(key, p2, 'llamada-2-productos');
     await new Promise(function(x){ setTimeout(x, 5000); }); // pausa anti-ratelimit
 
     // ── LLAMADA 3: Frases + Stats ──
     setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
     var p3 = ctx + '\n\nCONVERSACIONES BLOQUE 1:\n' + s1 + '\n\nCONVERSACIONES BLOQUE 3:\n' + s3 +
-      '\n\nResponde SOLO JSON sin markdown. Frases: copia textual corta de los chats (max 10 palabras cada una):\n' +
-      '{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"max 8 palabras","nivel_satisfaccion":"Alto/Medio/Bajo"},' +
-      '"frases_objecion":["frase corta 1","frase 2","frase 3","frase 4","frase 5"],' +
-      '"frases_positivas":["frase corta 1","frase 2","frase 3","frase 4","frase 5"]}';
+      '\n\nExtrae frases textuales reales de los chats y estadísticas. Responde SOLO JSON sin markdown:\n' +
+      '{"stats":{"nivel_satisfaccion":"Alto/Medio/Bajo","tiempo_respuesta_percibido":"Rápido/Normal/Lento","canal_contacto_principal":"WhatsApp/Llamada/Mixto"},' +
+      '"frases_objecion":["frase real del chat 1","frase 2","frase 3","frase 4","frase 5"],' +
+      '"frases_positivas":["frase real positiva 1","frase 2","frase 3","frase 4","frase 5"],' +
+      '"objeciones":[{"texto":"objeción frecuente","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta breve"}]}';
     var r3 = await claude(key, p3, 'llamada-3-stats');
     await new Promise(function(x){ setTimeout(x, 5000); }); // pausa anti-ratelimit
 
@@ -427,22 +454,27 @@ async function doAnalyze() {
       ' Satisfacción: '+((r3.stats||{}).nivel_satisfaccion||'') +
       '. Productos top: ' + (r2.productos_mencionados||[]).slice(0,3).map(function(p){ return p.producto; }).join(', ');
     var p4 = ctx + '\n\nRESUMEN DEL ANÁLISIS:\n' + resumen +
-      '\n\nGenera recomendaciones accionables. Responde SOLO JSON sin markdown. Max 15 palabras por descripcion:\n' +
-      '{"recomendaciones":[{"titulo":"max 5 palabras","descripcion":"acción concreta max 15 palabras","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
+      '\n\nBasado en el análisis, genera recomendaciones específicas para aumentar conversión y ventas. Incluye también indicadores adicionales relevantes. Responde SOLO JSON sin markdown:\n' +
+      '{"recomendaciones":[{"titulo":"título 4-5 palabras","descripcion":"acción concreta y específica max 20 palabras","prioridad":"urgente/importante/sugerencia","icono":"emoji"}],' +
+      '"indicadores_extra":[{"nombre":"nombre indicador","valor":"valor","descripcion":"qué significa","icono":"emoji"}]}';
     var r4 = await claude(key, p4, 'llamada-4-recomendaciones');
 
     // ── COMBINAR RESULTADOS ──
     setP(93, 'Construyendo dashboard...');
     var result = {
       stats: r3.stats || {},
-      objeciones: r1.objeciones || [],
+      ventas: r1.ventas || {},
+      objeciones_cierre: r1.objeciones_cierre || [],
+      objeciones: r3.objeciones || [],
       perfiles_clientes: r1.perfiles_clientes || [],
-      productos_mencionados: r2.productos_mencionados || [],
+      pizzas_individuales: r2.pizzas_individuales || [],
+      tamanos: r2.tamanos || [],
       horarios_pico: r2.horarios_pico || [],
       sentimiento: r2.sentimiento || {},
       frases_objecion: r3.frases_objecion || [],
       frases_positivas: r3.frases_positivas || [],
-      recomendaciones: r4.recomendaciones || []
+      recomendaciones: r4.recomendaciones || [],
+      indicadores_extra: r4.indicadores_extra || []
     };
 
     await new Promise(function(x){ setTimeout(x, 200); });
@@ -474,76 +506,179 @@ function setP(pct, text) {
 // RENDER
 function render(r, total, nChats, peak) {
   var cols = ['bfr','bfo','bfg','bfb','bfy'];
+  var v = r.ventas || {};
+  var cerradas = v.cerradas || 0;
+  var noCerradas = v.no_cerradas || 0;
+  var curiosos = v.curiosos || 0;
 
-  // Stats
+  // Stats grid
   document.getElementById('sgrid').innerHTML =
-    sc('Total mensajes', total, '') + sc('Clientes', nChats, 'r') +
+    sc('Total mensajes', total, '') +
+    sc('Conversaciones', nChats, 'r') +
+    sc('Ventas cerradas', cerradas, 'g') +
+    sc('No cerradas', noCerradas, 'o') +
+    sc('Curiosos', curiosos, '') +
+    sc('Conversión', v.tasa_conversion || '—', 'g') +
+    sc('Ticket prom.', v.ticket_promedio || '—', 'o') +
     sc('Hora pico', peak ? peak[0]+':00' : '—', 'o') +
-    sc('Satisfacción', r.stats ? r.stats.nivel_satisfaccion.split(/[\/—]/)[0].trim() : '—', 'g') +
-    sc('Conversión', r.stats ? r.stats.tasa_conversion_estimada : '—', '') +
-    sc('Precio percibido', r.stats ? r.stats.ticket_promedio_percibido : '—', 'o');
+    sc('Satisfacción', r.stats ? r.stats.nivel_satisfaccion || '—' : '—', 'g');
 
-  // Objeciones
-  var obj = r.objeciones || [];
-  document.getElementById('r-obj').innerHTML = obj.map(function(o) {
-    return '<div style="margin-bottom:10px;padding:10px;background:var(--rojo-light);border-radius:8px;border-left:3px solid var(--rojo);">' +
-      '<div style="font-weight:600;font-size:12px;color:var(--rojo-dark);margin-bottom:3px;">❝ ' + o.texto + '</div>' +
-      '<div style="font-size:10px;color:var(--gris);margin-bottom:4px;text-transform:uppercase;">Frecuencia: ' + o.frecuencia + '</div>' +
-      '<div style="font-size:12px;background:white;padding:6px 9px;border-radius:5px;">💡 ' + o.respuesta_sugerida + '</div></div>';
-  }).join('') || '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin objeciones detectadas</p>';
+  // ── PIE CHART ──
+  var canvas = document.getElementById('pieChart');
+  var ctx2 = canvas.getContext('2d');
+  var pieData = [
+    { label: 'Ventas cerradas', value: cerradas, color: '#2E7D52' },
+    { label: 'No cerradas', value: noCerradas, color: '#D4500A' },
+    { label: 'Curiosos', value: curiosos, color: '#C17B20' }
+  ];
+  var pieTotal = cerradas + noCerradas + curiosos || 1;
+  var startAngle = -Math.PI / 2;
+  ctx2.clearRect(0, 0, 200, 200);
+  pieData.forEach(function(seg) {
+    var slice = (seg.value / pieTotal) * 2 * Math.PI;
+    ctx2.beginPath();
+    ctx2.moveTo(100, 100);
+    ctx2.arc(100, 100, 90, startAngle, startAngle + slice);
+    ctx2.closePath();
+    ctx2.fillStyle = seg.color;
+    ctx2.fill();
+    ctx2.strokeStyle = '#fff';
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+    startAngle += slice;
+  });
+  // Center text
+  ctx2.fillStyle = '#111';
+  ctx2.font = 'bold 22px Syne, sans-serif';
+  ctx2.textAlign = 'center';
+  ctx2.fillText(nChats, 100, 96);
+  ctx2.font = '12px DM Sans, sans-serif';
+  ctx2.fillStyle = '#6B7280';
+  ctx2.fillText('conversaciones', 100, 114);
 
-  // Perfiles
-  document.getElementById('r-perf').innerHTML = '<div class="perfs">' + (r.perfiles_clientes || []).map(function(p) {
-    return '<div class="perf ' + (p.tipo||'low') + '"><div class="pi">' + p.icono + '</div>' +
-      '<div style="flex:1"><div class="pn">' + p.nombre + '</div><div class="pd">' + p.descripcion + '</div></div>' +
-      '<div class="pp">' + p.porcentaje + '%</div></div>';
+  // Legend
+  document.getElementById('r-pie-legend').innerHTML = pieData.map(function(seg) {
+    var pct = pieTotal > 0 ? Math.round(seg.value / pieTotal * 100) : 0;
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:9px;background:#F5F5F5;margin-bottom:8px;">' +
+      '<div style="width:14px;height:14px;border-radius:3px;background:'+seg.color+';flex-shrink:0;"></div>' +
+      '<div style="flex:1;"><div style="font-weight:600;font-size:14px;">'+seg.label+'</div>' +
+      '<div style="font-size:12px;color:#6B7280;">'+seg.value+' conversaciones</div></div>' +
+      '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:20px;color:'+seg.color+';">'+pct+'%</div>' +
+      '</div>';
+  }).join('');
+
+  // ── VENTAS Y CONVERSIÓN ──
+  var statsExtra = r.stats || {};
+  document.getElementById('r-ventas').innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    ventaRow('🛒 Ventas cerradas', cerradas, nChats, '#2E7D52') +
+    ventaRow('❌ No se cerró la venta', noCerradas, nChats, '#D4500A') +
+    ventaRow('👀 Solo curiosos', curiosos, nChats, '#C17B20') +
+    '<div style="margin-top:8px;padding:10px 14px;background:#F5F5F5;border-radius:9px;font-size:13px;">' +
+    '<div style="margin-bottom:4px;">⏱ Tiempo respuesta percibido: <strong>' + (statsExtra.tiempo_respuesta_percibido||'—') + '</strong></div>' +
+    '<div>📱 Canal principal: <strong>' + (statsExtra.canal_contacto_principal||'WhatsApp') + '</strong></div>' +
+    '</div></div>';
+
+  // ── OBJECIONES QUE IMPIDIERON CIERRES ──
+  var objCierre = r.objeciones_cierre || [];
+  document.getElementById('r-obj-cierres').innerHTML = objCierre.map(function(o) {
+    var impColor = o.impacto === 'Alto' ? 'var(--rojo)' : o.impacto === 'Medio' ? 'var(--naranja)' : 'var(--gris)';
+    return '<div style="margin-bottom:10px;padding:10px 12px;background:var(--rojo-light);border-radius:8px;border-left:3px solid var(--rojo);">' +
+      '<div style="font-weight:600;font-size:13px;color:var(--rojo-dark);margin-bottom:4px;">🚫 ' + o.texto + '</div>' +
+      '<div style="display:flex;gap:8px;font-size:11px;">' +
+      '<span style="background:white;padding:2px 8px;border-radius:20px;color:'+impColor+';font-weight:600;">Impacto: '+o.impacto+'</span>' +
+      '<span style="background:white;padding:2px 8px;border-radius:20px;color:#555;">Freq: '+o.frecuencia+'</span>' +
+      '</div></div>';
+  }).join('') || '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">No se detectaron objeciones de cierre</p>';
+
+  // ── PIZZAS INDIVIDUALES ──
+  var pizzas = r.pizzas_individuales || [];
+  var maxP = pizzas.length ? Math.max.apply(null, pizzas.map(function(p){ return p.pedidos; })) : 1;
+  document.getElementById('r-pizzas').innerHTML = '<div class="bars">' + pizzas.slice(0,8).map(function(p,i){
+    return '<div class="bar-i"><div class="bl">'+p.nombre+'<span>'+p.pedidos+' pedidos · '+p.porcentaje+'%</span></div>' +
+      '<div class="bt"><div class="bf '+cols[i%cols.length]+'" style="width:'+Math.round(p.pedidos/maxP*100)+'%"></div></div></div>';
+  }).join('') + '</div>' || '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin datos de pizzas individuales</p>';
+
+  // ── TAMAÑOS ──
+  var tams = r.tamanos || [];
+  var maxT = tams.length ? Math.max.apply(null, tams.map(function(t){ return t.pedidos; })) : 1;
+  document.getElementById('r-tam').innerHTML = '<div class="bars">' + tams.map(function(t,i){
+    return '<div class="bar-i"><div class="bl">'+t.tamano+'<span>'+t.pedidos+' pedidos · '+t.porcentaje+'%</span></div>' +
+      '<div class="bt"><div class="bf '+cols[i%cols.length]+'" style="width:'+Math.round(t.pedidos/maxT*100)+'%"></div></div></div>';
   }).join('') + '</div>';
 
-  // Productos
-  var prods = r.productos_mencionados || [];
-  var maxM = prods.length ? Math.max.apply(null, prods.map(function(p){ return p.menciones; })) : 1;
-  document.getElementById('r-prod').innerHTML = '<div class="bars">' + prods.slice(0,8).map(function(p,i) {
-    return '<div class="bar-i"><div class="bl">' + p.producto + '<span>' + p.menciones + ' · ' + p.contexto + '</span></div>' +
-      '<div class="bt"><div class="bf ' + cols[i%cols.length] + '" style="width:' + Math.round(p.menciones/maxM*100) + '%"></div></div></div>';
+  // ── PERFILES ──
+  document.getElementById('r-perf').innerHTML = '<div class="perfs">' + (r.perfiles_clientes||[]).map(function(p){
+    return '<div class="perf '+(p.tipo||'low')+'"><div class="pi">'+p.icono+'</div>' +
+      '<div style="flex:1"><div class="pn">'+p.nombre+'</div><div class="pd">'+p.descripcion+'</div></div>' +
+      '<div class="pp">'+p.porcentaje+'%</div></div>';
   }).join('') + '</div>';
 
-  // Horarios
+  // ── HORARIOS ──
   var horMap = {red:'bfr',orange:'bfo',green:'bfg',blue:'bfb',yellow:'bfy'};
-  document.getElementById('r-hor').innerHTML = '<div class="bars">' + (r.horarios_pico||[]).map(function(h) {
-    return '<div class="bar-i"><div class="bl">' + h.franja + '<span>' + h.horas + '</span></div>' +
-      '<div class="bt"><div class="bf ' + (horMap[h.color]||'bfo') + '" style="width:' + h.porcentaje + '%"></div></div></div>';
+  document.getElementById('r-hor').innerHTML = '<div class="bars">' + (r.horarios_pico||[]).map(function(h){
+    return '<div class="bar-i"><div class="bl">'+h.franja+'<span>'+h.horas+'</span></div>' +
+      '<div class="bt"><div class="bf '+(horMap[h.color]||'bfo')+'" style="width:'+h.porcentaje+'%"></div></div></div>';
   }).join('') + '</div>';
 
-  // Sentimiento
+  // ── SENTIMIENTO ──
   var s = r.sentimiento || {positivo:33,neutral:34,negativo:33,resumen:''};
   document.getElementById('r-sent').innerHTML =
     '<div class="sent-bar">' +
-    '<div class="ss" style="width:' + s.positivo + '%;background:var(--verde);">' + s.positivo + '%</div>' +
-    '<div class="ss" style="width:' + s.neutral + '%;background:var(--gris);">' + s.neutral + '%</div>' +
-    '<div class="ss" style="width:' + s.negativo + '%;background:var(--rojo);">' + s.negativo + '%</div>' +
-    '</div><div class="sleg">' +
-    '<span><span class="sd" style="background:var(--verde)"></span>Positivo ' + s.positivo + '%</span>' +
-    '<span><span class="sd" style="background:var(--gris)"></span>Neutral ' + s.neutral + '%</span>' +
-    '<span><span class="sd" style="background:var(--rojo)"></span>Negativo ' + s.negativo + '%</span>' +
-    '</div><p style="font-size:13px;color:var(--muted);line-height:1.6;">' + (s.resumen||'') + '</p>';
+    '<div class="ss" style="width:'+s.positivo+'%;background:var(--verde);">'+s.positivo+'%</div>' +
+    '<div class="ss" style="width:'+s.neutral+'%;background:var(--gris);">'+s.neutral+'%</div>' +
+    '<div class="ss" style="width:'+s.negativo+'%;background:var(--rojo);">'+s.negativo+'%</div>' +
+    '</div><div class="sleg" style="margin-bottom:10px;">' +
+    '<span><span class="sd" style="background:var(--verde)"></span>Positivo '+s.positivo+'%</span>' +
+    '<span><span class="sd" style="background:var(--gris)"></span>Neutral '+s.neutral+'%</span>' +
+    '<span><span class="sd" style="background:var(--rojo)"></span>Negativo '+s.negativo+'%</span>' +
+    '</div><p style="font-size:13px;color:var(--muted);line-height:1.6;">'+(s.resumen||'')+'</p>';
 
-  // Frases
+  // ── OBJECIONES GENERALES ──
+  var obj = r.objeciones || [];
+  document.getElementById('r-obj').innerHTML = obj.map(function(o){
+    return '<div style="margin-bottom:10px;padding:10px;background:var(--rojo-light);border-radius:8px;border-left:3px solid var(--rojo);">' +
+      '<div style="font-weight:600;font-size:13px;color:var(--rojo-dark);margin-bottom:3px;">❝ '+o.texto+'</div>' +
+      '<div style="font-size:11px;color:var(--gris);margin-bottom:4px;text-transform:uppercase;">Frecuencia: '+o.frecuencia+'</div>' +
+      '<div style="font-size:12px;background:white;padding:6px 9px;border-radius:5px;">💡 '+o.respuesta_sugerida+'</div></div>';
+  }).join('') || '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">Sin objeciones detectadas</p>';
+
+  // ── FRASES ──
   document.getElementById('r-fras').innerHTML =
     '<div class="ql r">Frases de objeción</div>' +
-    (r.frases_objecion||[]).map(function(f){ return '<div class="qi obj">❝ ' + f + ' ❞</div>'; }).join('') +
+    (r.frases_objecion||[]).map(function(f){ return '<div class="qi obj">❝ '+f+' ❞</div>'; }).join('') +
     '<div class="ql g">Frases positivas</div>' +
-    (r.frases_positivas||[]).map(function(f){ return '<div class="qi pos">❝ ' + f + ' ❞</div>'; }).join('');
+    (r.frases_positivas||[]).map(function(f){ return '<div class="qi pos">❝ '+f+' ❞</div>'; }).join('');
 
-  // Recomendaciones
-  document.getElementById('r-rec').innerHTML = '<div class="recs">' + (r.recomendaciones||[]).map(function(rec) {
+  // ── RECOMENDACIONES + INDICADORES EXTRA ──
+  var recs = r.recomendaciones || [];
+  var extras = r.indicadores_extra || [];
+  var extrasHtml = extras.length ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--borde);">' +
+    '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--azul);margin-bottom:10px;">💡 Indicadores adicionales sugeridos</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;">' +
+    extras.map(function(e){
+      return '<div style="padding:10px 14px;background:var(--azul-light);border-radius:9px;border-left:3px solid var(--azul);">' +
+        '<div style="font-size:18px;margin-bottom:4px;">'+e.icono+'</div>' +
+        '<div style="font-weight:600;font-size:13px;">'+e.nombre+': <span style="color:var(--azul);">'+e.valor+'</span></div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px;">'+e.descripcion+'</div></div>';
+    }).join('') + '</div></div>' : '';
+
+  document.getElementById('r-rec').innerHTML = '<div class="recs">' + recs.map(function(rec){
     var p = rec.prioridad || 'sugerencia';
-    return '<div class="rec ' + p + '"><div class="ri">' + rec.icono + '</div>' +
-      '<div><div class="rb ' + p + '">' + p.toUpperCase() + '</div>' +
-      '<div class="rt">' + rec.titulo + '</div>' +
-      '<div class="rd">' + rec.descripcion + '</div></div></div>';
-  }).join('') + '</div>';
+    return '<div class="rec '+p+'"><div class="ri">'+rec.icono+'</div>' +
+      '<div><div class="rb '+p+'">'+p.toUpperCase()+'</div>' +
+      '<div class="rt">'+rec.titulo+'</div>' +
+      '<div class="rd">'+rec.descripcion+'</div></div></div>';
+  }).join('') + '</div>' + extrasHtml;
 }
 
+function ventaRow(label, value, total, color) {
+  var pct = total > 0 ? Math.round(value/total*100) : 0;
+  return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#F5F5F5;border-radius:9px;border-left:4px solid '+color+';">' +
+    '<div style="flex:1;font-size:13px;font-weight:500;">'+label+'</div>' +
+    '<div style="font-family:Syne,sans-serif;font-weight:800;font-size:18px;color:'+color+';">'+value+'</div>' +
+    '<div style="font-size:12px;color:#6B7280;width:36px;text-align:right;">'+pct+'%</div></div>';
+}
 function sc(l, v, c) {
   // Use smaller font for longer text values
   var cls = c + (String(v).length > 12 ? ' sm' : '');
