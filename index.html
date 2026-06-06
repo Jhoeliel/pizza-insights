@@ -313,7 +313,7 @@ function parseAll() {
 }
 
 // GEMINI CALL
-async function gemini(key, prompt) {
+async function gemini(key, prompt, label) {
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key;
   var res = await fetch(url, {
     method: 'POST',
@@ -328,12 +328,24 @@ async function gemini(key, prompt) {
     throw new Error((ed.error && ed.error.message) || 'Error ' + res.status);
   }
   var data = await res.json();
+  // Check for blocked response
+  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+    var reason = (data.candidates && data.candidates[0] && data.candidates[0].finishReason) || 'desconocido';
+    throw new Error('Gemini bloqueó la respuesta (' + (label||'') + '). Razón: ' + reason);
+  }
   var raw = data.candidates[0].content.parts[0].text;
   var clean = raw.replace(/```json/g,'').replace(/```/g,'').trim();
   var s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-  if (s === -1 || e === -1) throw new Error('JSON no encontrado en respuesta');
+  if (s === -1 || e === -1) {
+    alert('DEBUG ' + (label||'') + ' (primeros 400 chars):\n' + raw.substring(0,400));
+    throw new Error('JSON no encontrado en respuesta ' + (label||''));
+  }
   clean = clean.substring(s, e+1).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-  return JSON.parse(clean);
+  try { return JSON.parse(clean); }
+  catch(pe) {
+    alert('DEBUG parse error ' + (label||'') + ':\n' + clean.substring(0,400));
+    throw new Error('Error parseando JSON de llamada ' + (label||''));
+  }
 }
 
 // ANALYZE
@@ -385,7 +397,7 @@ async function doAnalyze() {
       '\n\nResponde SOLO JSON sin markdown:\n' +
       '{"objeciones":[{"texto":"objeción detectada","frecuencia":"Alta/Media/Baja","respuesta_sugerida":"respuesta efectiva para esta objeción"}],' +
       '"perfiles_clientes":[{"nombre":"nombre perfil","icono":"emoji","descripcion":"descripción del perfil","porcentaje":30,"tipo":"top/medium/low"}]}';
-    var r1 = await gemini(key, p1);
+    var r1 = await gemini(key, p1, 'llamada-1-objeciones');
 
     // ── LLAMADA 2: Productos + Horarios + Sentimiento ──
     setP(35, 'Analizando productos, horarios y sentimiento (2/4)...');
@@ -394,7 +406,7 @@ async function doAnalyze() {
       '{"productos_mencionados":[{"producto":"nombre producto","menciones":5,"contexto":"pedido/consulta/queja"}],' +
       '"horarios_pico":[{"franja":"nombre franja","horas":"HH:00-HH:00","porcentaje":40,"color":"red/orange/yellow/green/blue"}],' +
       '"sentimiento":{"positivo":45,"neutral":35,"negativo":20,"resumen":"resumen de 2 líneas del sentimiento general"}}';
-    var r2 = await gemini(key, p2);
+    var r2 = await gemini(key, p2, 'llamada-2-productos');
 
     // ── LLAMADA 3: Frases + Stats ──
     setP(60, 'Extrayendo frases clave y estadísticas (3/4)...');
@@ -403,7 +415,7 @@ async function doAnalyze() {
       '{"stats":{"tasa_conversion_estimada":"XX%","ticket_promedio_percibido":"descripción precio percibido","nivel_satisfaccion":"Alto/Medio/Bajo — razón breve"},' +
       '"frases_objecion":["frase real de objeción 1","frase 2","frase 3","frase 4","frase 5"],' +
       '"frases_positivas":["frase positiva 1","frase 2","frase 3","frase 4","frase 5"]}';
-    var r3 = await gemini(key, p3);
+    var r3 = await gemini(key, p3, 'llamada-3-stats');
 
     // ── LLAMADA 4: Recomendaciones (basadas en todo lo anterior) ──
     setP(80, 'Generando recomendaciones accionables (4/4)...');
@@ -414,7 +426,7 @@ async function doAnalyze() {
     var p4 = ctx + '\n\nRESUMEN DEL ANÁLISIS:\n' + resumen +
       '\n\nBasándote en este análisis, genera recomendaciones accionables específicas para mejorar las ventas y atención. Responde SOLO JSON sin markdown:\n' +
       '{"recomendaciones":[{"titulo":"título corto","descripcion":"acción concreta y específica","prioridad":"urgente/importante/sugerencia","icono":"emoji"}]}';
-    var r4 = await gemini(key, p4);
+    var r4 = await gemini(key, p4, 'llamada-4-recomendaciones');
 
     // ── COMBINAR RESULTADOS ──
     setP(93, 'Construyendo dashboard...');
